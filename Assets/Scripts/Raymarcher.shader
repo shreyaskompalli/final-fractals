@@ -2,7 +2,6 @@ Shader "Unlit/Raymarcher"
 {
     Properties 
     {
-        hFov ("hFov", Float) = 0.0
     }
     SubShader
     {
@@ -19,7 +18,14 @@ Shader "Unlit/Raymarcher"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+
+            // Material properties passed in from C#j
             float hFov;
+            float vFov;
+            float4x4 c2w;
+
+            const float EPSILON = 0.0001f;
+            const float end = 999999.9f;
 
             struct appdata
             {
@@ -29,6 +35,7 @@ Shader "Unlit/Raymarcher"
             struct v2f
             {
                 float4 vertex : SV_POSITION;
+                float4 scrPos : TEXCOORD1;
             };
 
             float sphereSDF(float3 p, float radius)
@@ -38,33 +45,48 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, 1);
+                return sphereSDF(samplePoint, 10);
             }
 
             /**
              * Generates ray starting from camera passing through sensor plane at (x, y) returns ray direction
              */
-            float3 generateRay(float x, float y)
+            float3 generateRayDir(float x, float y)
             {
-                
+                float hFovRad = (hFov * UNITY_PI) / 180;
+                float vFovRad = (vFov * UNITY_PI) / 180;
+                float xcam = 2 * tan(0.5 * hFovRad) * x - tan(0.5 * hFovRad);
+                float ycam = 2 * tan(0.5 * vFovRad) * y - tan(0.5 * vFovRad);
+                return mul(c2w, normalize(float4(xcam, ycam, -1.0f, 1.0f))).xyz;
+            }
+
+            // sample code from jamie wong article
+            float rayMarch(int maxSteps, float3 dir)
+            {
+                float depth = 0;
+                for (int j = 0; j < maxSteps; ++j)
+                {
+                    float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
+                    if (dist < EPSILON) return depth;
+                    depth += dist;
+                    if (depth >= end) return end;
+                }
+                return end;
             }
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
+                o.scrPos = ComputeScreenPos(v.vertex);
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float depth = 0;
-                int MAX_MARCHING_STEPS = 10;
-                for (int j = 0; j < MAX_MARCHING_STEPS; ++j)
-                {
-                    // float dist = sceneSDF(_WorldSpaceCameraPos + depth * )
-                }
-                return hFov;
+                float distTraveled = rayMarch(10, generateRayDir(i.scrPos.x, i.scrPos.y));
+                if (distTraveled < end) return fixed4(1, 0, 0, 1);
+                return fixed4(0, 0, 0, 1);
             }
             ENDCG
         }
