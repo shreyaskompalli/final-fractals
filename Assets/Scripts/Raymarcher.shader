@@ -1,8 +1,6 @@
 Shader "Unlit/Raymarcher"
 {
-    Properties 
-    {
-    }
+    Properties {}
     SubShader
     {
         Tags
@@ -23,9 +21,9 @@ Shader "Unlit/Raymarcher"
             float hFov;
             float vFov;
             float4x4 c2w;
+            float4x4 i2c;
 
-            const float EPSILON = 0.0001f;
-            const float end = 999999.9f;
+            const float EPSILON = 0.001f;
 
             struct appdata
             {
@@ -35,17 +33,17 @@ Shader "Unlit/Raymarcher"
             struct v2f
             {
                 float4 vertex : SV_POSITION;
-                float4 scrPos : TEXCOORD1;
+                float2 scrPos : TEXCOORD1;
             };
 
-            float sphereSDF(float3 p, float radius)
+            float sphereSDF(float3 p, float3 origin, float radius)
             {
-                return length(p) - radius;
+                return distance(p, origin) - radius;
             }
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, 10);
+                return sphereSDF(samplePoint, float3(0, 0, 0), 10.05);
             }
 
             /**
@@ -53,40 +51,44 @@ Shader "Unlit/Raymarcher"
              */
             float3 generateRayDir(float x, float y)
             {
-                float hFovRad = (hFov * UNITY_PI) / 180;
-                float vFovRad = (vFov * UNITY_PI) / 180;
-                float xcam = 2 * tan(0.5 * hFovRad) * x - tan(0.5 * hFovRad);
-                float ycam = 2 * tan(0.5 * vFovRad) * y - tan(0.5 * vFovRad);
-                return mul(c2w, normalize(float4(xcam, ycam, -1.0f, 1.0f))).xyz;
+                // float hFovRad = (hFov * UNITY_PI) / 180;
+                // float vFovRad = (vFov * UNITY_PI) / 180;
+                // float xcam = 2 * tan(0.5 * hFovRad) * x - tan(0.5 * hFovRad);
+                // float ycam = 2 * tan(0.5 * vFovRad) * y - tan(0.5 * vFovRad);
+                // return mul(c2w, normalize(float4(xcam, ycam, -1.0f, 1.0f))).xyz;
+                float4 dirImage = float4(x, y, 0, 1);
+                // float4 dirCamera = mul(i2c, dirImage);
+                float4 dirWorld = mul(c2w, dirImage);
+                return normalize(dirWorld.xyz);
             }
 
             // sample code from jamie wong article
-            float rayMarch(int maxSteps, float3 dir)
+            float4 rayMarch(int maxSteps, float3 dir)
             {
                 float depth = 0;
                 for (int j = 0; j < maxSteps; ++j)
                 {
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
-                    if (dist < EPSILON) return depth;
+                    if (dist < EPSILON) return float4(1, 0, 0, 1);
                     depth += dist;
-                    if (depth >= end) return end;
                 }
-                return end;
+                return float4(0, 0, 0, 1);
             }
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.scrPos = ComputeScreenPos(v.vertex);
+                float4 vertScrPos = ComputeScreenPos(v.vertex);
+                // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
+                o.scrPos = vertScrPos.xy / vertScrPos.w;
+                
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float distTraveled = rayMarch(10, generateRayDir(i.scrPos.x, i.scrPos.y));
-                if (distTraveled < end) return fixed4(1, 0, 0, 1);
-                return fixed4(0, 0, 0, 1);
+                return rayMarch(32, generateRayDir(i.scrPos.x, i.scrPos.y));
             }
             ENDCG
         }
