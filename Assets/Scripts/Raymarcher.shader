@@ -20,8 +20,6 @@ Shader "Unlit/Raymarcher"
             // Material properties passed in from C#j
             float hFov;
             float vFov;
-            float4x4 c2w;
-            float4x4 i2c;
 
             const float EPSILON = 0.001f;
 
@@ -33,7 +31,7 @@ Shader "Unlit/Raymarcher"
             struct v2f
             {
                 float4 vertex : SV_POSITION;
-                float2 scrPos : TEXCOORD1;
+                float4 scrPos : TEXCOORD1;
             };
 
             float sphereSDF(float3 p, float3 origin, float radius)
@@ -43,7 +41,7 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(0, 0, 0), 10.05);
+                return sphereSDF(samplePoint, float3(0, 0, 0), 10.04);
             }
 
             /**
@@ -57,8 +55,8 @@ Shader "Unlit/Raymarcher"
                 // float ycam = 2 * tan(0.5 * vFovRad) * y - tan(0.5 * vFovRad);
                 // return mul(c2w, normalize(float4(xcam, ycam, -1.0f, 1.0f))).xyz;
                 float4 dirImage = float4(x, y, 0, 1);
-                // float4 dirCamera = mul(i2c, dirImage);
-                float4 dirWorld = mul(c2w, dirImage);
+                float4 dirCamera = mul(unity_CameraInvProjection, dirImage);
+                float4 dirWorld = mul(unity_CameraToWorld, dirCamera);
                 return normalize(dirWorld.xyz);
             }
 
@@ -81,13 +79,14 @@ Shader "Unlit/Raymarcher"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 float4 vertScrPos = ComputeScreenPos(v.vertex);
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
-                o.scrPos = vertScrPos.xy / vertScrPos.w;
+                o.scrPos = vertScrPos;
                 
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
+                float2 screenPos = i.scrPos.xy / i.scrPos.w;
                 return rayMarch(32, generateRayDir(i.scrPos.x, i.scrPos.y));
             }
             ENDCG
