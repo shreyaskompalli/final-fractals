@@ -38,6 +38,7 @@ Shader "Unlit/Raymarcher"
                 float4 scrPos : TEXCOORD1;
             };
 
+            // Overrides the normal fragment shader output and instead outputs COLOR to the screen
             void setDebugOutput(float4 color)
             {
                 debug = 1;
@@ -60,21 +61,23 @@ Shader "Unlit/Raymarcher"
             float3 generateRayDir(float2 coords)
             {
                 // proj 3-1 code courtesy of linda
-                float2 fov = float2(hFov, vFov);
-                float2 fovRad = fov * UNITY_PI / 180;
-                float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
-                return mul(unity_CameraToWorld, normalize(float4(camPos, -1.0f, 1.0f))).xyz;
+                // float2 fov = float2(hFov, vFov);
+                // float2 fovRad = fov * UNITY_PI / 180;
+                // float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
+                // float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, -1.0f, 1.0f)).xyz);
 
                 // sebastian lague
                 // float4 dirImage = float4(coords, 0, 1);
                 // float4 dirCamera = mul(unity_CameraInvProjection, dirImage);
                 // float4 dirWorld = mul(unity_CameraToWorld, dirCamera);
-                // return normalize(dirWorld.xyz);
+                // float3 dir = normalize(dirWorld.xyz);
 
                 // jamie wong
-                // float2 xy = coords - _ScreenParams.xy / 2;
-                // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
-                // return normalize(mul(unity_CameraToWorld, float3(xy, -z)));
+                float2 xy = coords - _ScreenParams.xy / 2;
+                float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
+                float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, -z)));
+                // setDebugOutput(float4(dir.xyz, 1));
+                return dir;
             }
 
             // sample code from jamie wong article
@@ -84,7 +87,8 @@ Shader "Unlit/Raymarcher"
                 for (int j = 0; j < maxSteps; ++j)
                 {
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
-                    // if (j == 1) setDebugOutput(float4(dist / 10, 0, 0, 1));
+                    // increasing the number here makes the image MORE red; why?
+                    // if (j == 2) setDebugOutput(float4(dist / 10, 0, 0, 1));
                     if (dist < EPSILON) return float4(1, 0, 0, 1);
                     depth += dist;
                 }
