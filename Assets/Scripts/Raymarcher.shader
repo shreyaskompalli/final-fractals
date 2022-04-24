@@ -17,15 +17,22 @@ Shader "Unlit/Raymarcher"
 
             #include "UnityCG.cginc"
 
+            struct PrimitiveData
+            {
+                float3 position;
+                float3 scale;
+                int type;
+            };
+
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
 
-            // Material properties passed in from C#j
+            // Material properties passed in from C#
             float hFov;
             float vFov;
-
-            const float EPSILON = 0.001f;
+            StructuredBuffer<PrimitiveData> primitiveBuffer;
+            int numPrimitives;
 
             struct appdata
             {
@@ -52,7 +59,24 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(5, 2.5, -9), 1.2);
+                float maxDist = 9999.0f;
+                float minSDF = maxDist;  // some arbitrarily large value; there's no float.INFINITY
+                for (int i = 0; i < numPrimitives; ++i)
+                {
+                    float primSDF;
+                    PrimitiveData prim = primitiveBuffer[i];
+                    switch (prim.type)
+                    {
+                    case 0:
+                        primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
+                        break;
+                    default:
+                        primSDF = maxDist;
+                        break;
+                    }
+                    minSDF = min(minSDF, primSDF);
+                }
+                return minSDF;
             }
 
             /**
@@ -81,6 +105,8 @@ Shader "Unlit/Raymarcher"
                 return dir;
             }
 
+            static const float EPSILON = 1.0f;
+
             // sample code from jamie wong article
             float4 rayMarch(int maxSteps, float3 dir)
             {
@@ -90,7 +116,7 @@ Shader "Unlit/Raymarcher"
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
                     // increasing the number here makes the image MORE red; why?
                     // if (j == 0) setDebugOutput(float4(dist / 10, 0, 0, 1));
-                    if (dist < 1) return float4(1, 0, 0, 1);
+                    if (dist < EPSILON) return float4(1, 0, 0, 1);
                     depth += dist;
                 }
                 return float4(0, 0, 0, 1);
