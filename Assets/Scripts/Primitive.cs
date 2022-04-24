@@ -9,7 +9,7 @@ public class Primitive : MonoBehaviour
 
     public enum PrimitiveType
     {
-        Sphere
+        Sphere, Cube
     };
 
     public PrimitiveData data()

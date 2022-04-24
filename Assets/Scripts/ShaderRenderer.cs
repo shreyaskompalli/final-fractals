@@ -24,7 +24,6 @@ public class ShaderRenderer : MonoBehaviour
     {
         if (!initialized) Init();
         
-        // TODO: get shape positions from scene and send to shader
         var vFov = cam.fieldOfView;
         var hFov = Camera.VerticalToHorizontalFieldOfView(vFov, cam.aspect);
         var primitiveBuffer = new ComputeBuffer(primitives.Length, Primitive.PrimitiveData.sizeOf());
@@ -36,6 +35,7 @@ public class ShaderRenderer : MonoBehaviour
         mat.SetInteger(NumPrimitives, primitives.Length);
         
         Graphics.Blit(src, dest, mat);
+        // TODO: getting warning saying primitiveBuffer is garbage collected
         primitiveBuffer.Dispose();
     }
 

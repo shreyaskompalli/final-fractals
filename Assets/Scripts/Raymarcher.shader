@@ -27,6 +27,7 @@ Shader "Unlit/Raymarcher"
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
+            static const float EPSILON = 0.001f;
 
             // Material properties passed in from C#
             float hFov;
@@ -57,6 +58,13 @@ Shader "Unlit/Raymarcher"
                 return distance(p, origin) - radius;
             }
 
+            float boxSDF( float3 p, float3 origin, float3 sideLength )
+            {
+                // return length(max(abs(p)-b,0.0));
+                float3 q = abs(p - origin) - sideLength;
+                return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+            }
+
             float sceneSDF(float3 samplePoint)
             {
                 float maxDist = 9999.0f;
@@ -67,8 +75,12 @@ Shader "Unlit/Raymarcher"
                     PrimitiveData prim = primitiveBuffer[i];
                     switch (prim.type)
                     {
+                        // see Primitive.PrimitiveType enum for int to type mapping
                     case 0:
                         primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
+                        break;
+                    case 1:
+                        primSDF = boxSDF(samplePoint, prim.position, prim.scale);
                         break;
                     default:
                         primSDF = maxDist;
@@ -105,7 +117,6 @@ Shader "Unlit/Raymarcher"
                 return dir;
             }
 
-            static const float EPSILON = 1.0f;
 
             // sample code from jamie wong article
             float4 rayMarch(int maxSteps, float3 dir)
