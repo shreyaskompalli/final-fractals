@@ -6,6 +6,7 @@ using UnityEngine;
 public class Primitive : MonoBehaviour
 {
     public PrimitiveType type;
+    public Color color;
 
     public enum PrimitiveType
     {
@@ -20,7 +21,8 @@ public class Primitive : MonoBehaviour
         {
             position = myTransform.position,
             scale = myTransform.localScale,
-            type = typeOrdinal
+            type = typeOrdinal,
+            color = this.color
         };
     }
 
@@ -29,11 +31,13 @@ public class Primitive : MonoBehaviour
         public Vector3 position;
         public Vector3 scale;
         public int type;
+        public Color color;
 
         public static int sizeOf()
         {
             var sizeofVector3 = sizeof(float) * 3;
-            return 2 * sizeofVector3 + sizeof(int);
+            var sizeofColor = sizeof(float) * 4;
+            return 2 * sizeofVector3 + sizeofColor + sizeof(int);
         }
     }
 }
