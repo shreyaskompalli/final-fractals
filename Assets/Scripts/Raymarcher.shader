@@ -18,7 +18,7 @@ Shader "Unlit/Raymarcher"
             #include "UnityCG.cginc"
 
             // Used to hold output to screen if DEBUG is true
-            bool debug = false;
+            float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
 
             // Material properties passed in from C#j
@@ -40,18 +40,18 @@ Shader "Unlit/Raymarcher"
 
             void setDebugOutput(float4 color)
             {
-                debug = true;
+                debug = 1;
                 debugOutputColor = color;
             }
 
             float sphereSDF(float3 p, float3 origin, float radius)
             {
-                return distance(p, origin) - radius;
+                return distance(p, origin + _WorldSpaceCameraPos.xyz) - radius;
             }
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(0, 0, -5.7), 5);
+                return sphereSDF(samplePoint, float3(0, 0, 3), 2);
             }
 
             /**
@@ -77,7 +77,7 @@ Shader "Unlit/Raymarcher"
                 for (int j = 0; j < maxSteps; ++j)
                 {
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
-                    // if (j >= 6) return float4(dist, 0, 0, 1);
+                    if (j == 1) setDebugOutput(float4(dist / 10, 0, 0, 1));
                     if (dist < EPSILON) return float4(1, 0, 0, 1);
                     depth += dist;
                 }
@@ -99,7 +99,7 @@ Shader "Unlit/Raymarcher"
                 float2 screenPos = screenUV * _ScreenParams.xy;
                 float3 dir = generateRayDir(screenUV);
                 float4 output = rayMarch(32, dir);
-                return debug ? debugOutputColor : output;
+                return debug == 1 ? debugOutputColor : output;
             }
             ENDCG
         }
