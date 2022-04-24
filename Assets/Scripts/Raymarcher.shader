@@ -52,7 +52,7 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(4, 2, -8), 1.2);
+                return sphereSDF(samplePoint, float3(3, 5, -9), 1.2);
             }
 
             /**
@@ -61,10 +61,10 @@ Shader "Unlit/Raymarcher"
             float3 generateRayDir(float2 coords)
             {
                 // proj 3-1 code courtesy of linda
-                // float2 fov = float2(hFov, vFov);
-                // float2 fovRad = fov * UNITY_PI / 180;
-                // float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
-                // float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, -1.0f, 1.0f)).xyz);
+                float2 fov = float2(hFov, vFov);
+                float2 fovRad = fov * UNITY_PI / 180;
+                float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
+                float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, -1.0f, 1.0f)).xyz);
 
                 // sebastian lague
                 // float4 dirImage = float4(coords, 0, 1);
@@ -73,9 +73,10 @@ Shader "Unlit/Raymarcher"
                 // float3 dir = normalize(dirWorld.xyz);
 
                 // jamie wong
-                float2 xy = coords - _ScreenParams.xy / 2;
-                float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
-                float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, -z)));
+                // float2 scaledCoords = coords * _ScreenParams.xy;
+                // float2 xy = scaledCoords - _ScreenParams.xy / 2;
+                // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
+                // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, -z)));
                 // setDebugOutput(float4(dir.xyz, 1));
                 return dir;
             }
@@ -107,8 +108,7 @@ Shader "Unlit/Raymarcher"
             {
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
                 float2 screenUV = i.scrPos.xy / i.scrPos.w; // in range [0, 1]
-                float2 screenPos = screenUV * _ScreenParams.xy;
-                float3 dir = generateRayDir(screenPos);
+                float3 dir = generateRayDir(screenUV);
                 float4 output = rayMarch(32, dir);
                 return debug == 1 ? debugOutputColor : output;
             }
