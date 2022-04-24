@@ -52,7 +52,7 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(3, 5, -9), 1.2);
+                return sphereSDF(samplePoint, float3(5, 2.5, -9), 1.2);
             }
 
             /**
@@ -89,7 +89,7 @@ Shader "Unlit/Raymarcher"
                 {
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
                     // increasing the number here makes the image MORE red; why?
-                    // if (j == 9) setDebugOutput(float4(dist / 10, 0, 0, 1));
+                    // if (j == 0) setDebugOutput(float4(dist / 10, 0, 0, 1));
                     if (dist < 1) return float4(1, 0, 0, 1);
                     depth += dist;
                 }
