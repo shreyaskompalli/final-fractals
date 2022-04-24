@@ -28,8 +28,6 @@ Shader "Unlit/Raymarcher"
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
-            float3 lightPos = float3(0, 0, 0);
-            float3 lightIntensity = float3(3, 3, 3);
             static const float EPSILON = 0.001f;
 
             // Material properties passed in from C#
@@ -161,12 +159,16 @@ Shader "Unlit/Raymarcher"
                 return dir;
             }
 
-            float4 diffuseShading(float3 intersection, float kd, float4 color)
+            float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
             {
-                float3 r = distance(intersection, lightPos);
+                float3 lightPos = float3(2, -3, -10);
+                float3 lightIntensity = float3(10, 10, 10);
+                float r = distance(intersection, lightPos);
                 float3 n = calcNormal(intersection, EPSILON);
                 float3 l = normalize(lightPos - intersection);
-                return float4(kd * (lightIntensity / (r * r)) * max(0, dot(n, l)), 1);
+                float3 rgb = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
+                return float4(rgb * primitiveColor, 1);
+                // return float4(rgb, 1);
             }
 
             // sample code from jamie wong article
@@ -180,8 +182,8 @@ Shader "Unlit/Raymarcher"
                     if (dist < EPSILON)
                     {
                         PrimitiveData closest = closestPrimitive(ray);
-                        return closest.color;
-                        // return diffuseShading(ray, 0.25, closest.color);
+                        // return closest.color;
+                        return diffuseShading(ray, 1.00, closest.color);
                     }
                     depth += dist;
                 }
