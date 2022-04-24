@@ -31,16 +31,13 @@ Shader "Unlit/Raymarcher"
             static const float EPSILON = 0.001f;
             static const float maxDist = 9999.0f;
 
-            // Lighting effects
-            // TODO: fetch these from the scene
-            static float3 lightPos = float3(0, 0, -9);
-            static float3 lightIntensity = float3(3, 3, 3);
-
             // Material properties passed in from C#
             float hFov;
             float vFov;
             StructuredBuffer<PrimitiveData> primitiveBuffer;
             int numPrimitives;
+            float4 lightPos;
+            float lightIntensity;
 
             struct appdata
             {
@@ -159,11 +156,11 @@ Shader "Unlit/Raymarcher"
 
             float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
             {
-                float r = distance(intersection, lightPos);
+                float r = distance(intersection, lightPos.xyz);
                 float3 n = calcNormal(intersection, EPSILON);
-                float3 l = normalize(lightPos - intersection);
-                float3 rgb = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
-                return float4(rgb * primitiveColor, 1);
+                float3 l = normalize(lightPos.xyz - intersection);
+                float rgb = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
+                return float4(rgb * primitiveColor);
             }
 
             // sample code from jamie wong article
