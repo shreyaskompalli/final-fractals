@@ -22,6 +22,7 @@ public class ShaderRenderer : MonoBehaviour
     private static readonly int NumPrimitives = Shader.PropertyToID("numPrimitives");
     private static readonly int LightPos = Shader.PropertyToID("lightPos");
     private static readonly int LightIntensity = Shader.PropertyToID("lightIntensity");
+    private static readonly int BackgroundColor = Shader.PropertyToID("backgroundColor");
 
     private void OnRenderImage(RenderTexture src, RenderTexture dest)
     {
@@ -33,13 +34,14 @@ public class ShaderRenderer : MonoBehaviour
         var lightPosVec3 = sceneLight.transform.position;
         var lightPos = new Vector4(lightPosVec3.x, lightPosVec3.y, lightPosVec3.z, 1);
         var lightIntensity = sceneLight.intensity;
-        
+
         var primitiveBuffer = new ComputeBuffer(primitives.Length, Primitive.PrimitiveData.sizeOf());
         primitiveBuffer.SetData(SceneData());
         
         mat.SetFloat(HFov, hFov);
         mat.SetFloat(VFov, vFov);
         mat.SetVector(LightPos, lightPos);
+        mat.SetVector(BackgroundColor, cam.backgroundColor);
         mat.SetBuffer(PrimitiveBuffer, primitiveBuffer);
         mat.SetFloat(LightIntensity, lightIntensity);
         mat.SetInteger(NumPrimitives, primitives.Length);

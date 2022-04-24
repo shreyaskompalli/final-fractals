@@ -28,6 +28,7 @@ Shader "Unlit/Raymarcher"
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
+            
             static const float EPSILON = 0.001f;
             static const float maxDist = 9999.0f;
 
@@ -36,6 +37,7 @@ Shader "Unlit/Raymarcher"
             float vFov;
             StructuredBuffer<PrimitiveData> primitiveBuffer;
             int numPrimitives;
+            float4 backgroundColor;
             float4 lightPos;
             float lightIntensity;
 
@@ -178,7 +180,7 @@ Shader "Unlit/Raymarcher"
                     }
                     depth += dist;
                 }
-                return float4(0, 0, 0, 1);
+                return backgroundColor;
             }
 
             v2f vert(appdata v)
