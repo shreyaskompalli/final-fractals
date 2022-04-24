@@ -54,7 +54,6 @@ Shader "Unlit/Raymarcher"
                 debugOutputColor = color;
             }
 
-
             float sphereSDF(float3 p, float3 origin, float radius)
             {
                 return distance(p, origin) - radius;
@@ -161,14 +160,13 @@ Shader "Unlit/Raymarcher"
 
             float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
             {
-                float3 lightPos = float3(2, -3, -10);
-                float3 lightIntensity = float3(10, 10, 10);
+                float3 lightPos = float3(0, 0, -9);
+                float3 lightIntensity = float3(3, 3, 3);
                 float r = distance(intersection, lightPos);
                 float3 n = calcNormal(intersection, EPSILON);
                 float3 l = normalize(lightPos - intersection);
                 float3 rgb = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
                 return float4(rgb * primitiveColor, 1);
-                // return float4(rgb, 1);
             }
 
             // sample code from jamie wong article
@@ -182,8 +180,7 @@ Shader "Unlit/Raymarcher"
                     if (dist < EPSILON)
                     {
                         PrimitiveData closest = closestPrimitive(ray);
-                        // return closest.color;
-                        return diffuseShading(ray, 1.00, closest.color);
+                        return diffuseShading(ray, 1.00, closest.color) + 0.2 * closest.color;
                     }
                     depth += dist;
                 }
