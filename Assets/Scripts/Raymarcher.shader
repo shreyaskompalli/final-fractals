@@ -127,6 +127,15 @@ Shader "Unlit/Raymarcher"
                 return normalize(float3(x, y, z));
             }
 
+            float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
+            {
+                float r = distance(intersection, lightPos.xyz);
+                float3 n = calcNormal(intersection, EPSILON);
+                float3 l = normalize(lightPos.xyz - intersection);
+                float lightStrength = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
+                return float4(lightStrength * primitiveColor);
+            }
+
             /**
              * Generates ray starting from camera passing through sensor plane at coords returns ray direction
              */
@@ -152,15 +161,6 @@ Shader "Unlit/Raymarcher"
                 // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, -z)));
                 // setDebugOutput(float4(dir.xyz, 1));
                 return dir;
-            }
-
-            float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
-            {
-                float r = distance(intersection, lightPos.xyz);
-                float3 n = calcNormal(intersection, EPSILON);
-                float3 l = normalize(lightPos.xyz - intersection);
-                float rgb = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
-                return float4(rgb * primitiveColor);
             }
 
             // sample code from jamie wong article
