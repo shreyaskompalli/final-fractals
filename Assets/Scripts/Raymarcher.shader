@@ -29,6 +29,12 @@ Shader "Unlit/Raymarcher"
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
             static const float EPSILON = 0.001f;
+            static const float maxDist = 9999.0f;
+
+            // Lighting effects
+            // TODO: fetch these from the scene
+            static float3 lightPos = float3(0, 0, -9);
+            static float3 lightIntensity = float3(3, 3, 3);
 
             // Material properties passed in from C#
             float hFov;
@@ -66,54 +72,46 @@ Shader "Unlit/Raymarcher"
                 return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
             }
 
+            // calls corresponding SDF function based on primitive type of PRIM
+            float primitiveSDF(PrimitiveData prim, float3 samplePoint)
+            {
+                float primSDF;
+                switch (prim.type)
+                {
+                // see Primitive.PrimitiveType enum for int to type mapping
+                case 0:
+                    primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
+                    break;
+                case 1:
+                    primSDF = boxSDF(samplePoint, prim.position, prim.scale);
+                    break;
+                default:
+                    primSDF = maxDist;
+                    break;
+                }
+                return primSDF;
+            }
+
+            // takes min over SDF of all primitives in scene
             float sceneSDF(float3 samplePoint)
             {
-                float maxDist = 9999.0f;
                 float minSDF = maxDist; // some arbitrarily large value; there's no float.INFINITY
                 for (int i = 0; i < numPrimitives; ++i)
                 {
-                    float primSDF;
                     PrimitiveData prim = primitiveBuffer[i];
-                    switch (prim.type)
-                    {
-                    // see Primitive.PrimitiveType enum for int to type mapping
-                    case 0:
-                        primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
-                        break;
-                    case 1:
-                        primSDF = boxSDF(samplePoint, prim.position, prim.scale);
-                        break;
-                    default:
-                        primSDF = maxDist;
-                        break;
-                    }
-                    minSDF = min(minSDF, primSDF);
+                    minSDF = min(minSDF, primitiveSDF(prim, samplePoint));
                 }
                 return minSDF;
             }
-
+            
             PrimitiveData closestPrimitive(float3 samplePoint)
             {
-                float maxDist = 9999.0f;
                 float minSDF = maxDist; // some arbitrarily large value; there's no float.INFINITY
                 PrimitiveData closest;
                 for (int i = 0; i < numPrimitives; ++i)
                 {
-                    float primSDF;
                     PrimitiveData prim = primitiveBuffer[i];
-                    switch (prim.type)
-                    {
-                    // see Primitive.PrimitiveType enum for int to type mapping
-                    case 0:
-                        primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
-                        break;
-                    case 1:
-                        primSDF = boxSDF(samplePoint, prim.position, prim.scale);
-                        break;
-                    default:
-                        primSDF = maxDist;
-                        break;
-                    }
+                    float primSDF = primitiveSDF(prim, samplePoint);
                     if (primSDF < minSDF)
                     {
                         minSDF = primSDF;
@@ -141,6 +139,7 @@ Shader "Unlit/Raymarcher"
                 float2 fov = float2(hFov, vFov);
                 float2 fovRad = fov * UNITY_PI / 180;
                 float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
+                // TODO: Account for camera rotation
                 float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, -1.0f, 1.0f)).xyz);
 
                 // sebastian lague
@@ -160,8 +159,6 @@ Shader "Unlit/Raymarcher"
 
             float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
             {
-                float3 lightPos = float3(0, 0, -9);
-                float3 lightIntensity = float3(3, 3, 3);
                 float r = distance(intersection, lightPos);
                 float3 n = calcNormal(intersection, EPSILON);
                 float3 l = normalize(lightPos - intersection);
