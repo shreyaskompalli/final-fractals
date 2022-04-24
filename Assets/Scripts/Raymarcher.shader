@@ -51,7 +51,7 @@ Shader "Unlit/Raymarcher"
 
             float sceneSDF(float3 samplePoint)
             {
-                return sphereSDF(samplePoint, float3(0, 0, 0), 5);
+                return sphereSDF(samplePoint, float3(0, 0, -5.7), 5);
             }
 
             /**
@@ -77,7 +77,7 @@ Shader "Unlit/Raymarcher"
                 for (int j = 0; j < maxSteps; ++j)
                 {
                     float dist = sceneSDF(_WorldSpaceCameraPos + depth * dir);
-                    if (j >= 6) return float4(dist, 0, 0, 1);
+                    // if (j >= 6) return float4(dist, 0, 0, 1);
                     if (dist < EPSILON) return float4(1, 0, 0, 1);
                     depth += dist;
                 }
