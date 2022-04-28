@@ -147,8 +147,7 @@ Shader "Unlit/Raymarcher"
                 float2 fov = float2(hFov, vFov);
                 float2 fovRad = fov * UNITY_PI / 180;
                 float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
-                // TODO: Account for camera rotation
-                float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, -1.0f, 1.0f)).xyz);
+                float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, 1.0f, 1.0f)).xyz);
 
                 // sebastian lague
                 // float4 dirImage = float4(coords, 0, 1);
