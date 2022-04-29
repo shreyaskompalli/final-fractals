@@ -1,6 +1,4 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
@@ -14,7 +12,7 @@ public class ShaderRenderer : MonoBehaviour
     private Camera cam;
     private Material mat;
 
-    private bool initialized = false;
+    private bool initialized;
     
     private static readonly int HFov = Shader.PropertyToID("hFov");
     private static readonly int VFov = Shader.PropertyToID("vFov");
@@ -35,7 +33,7 @@ public class ShaderRenderer : MonoBehaviour
         var lightPos = new Vector4(lightPosVec3.x, lightPosVec3.y, lightPosVec3.z, 1);
         var lightIntensity = sceneLight.intensity;
 
-        var primitiveBuffer = new ComputeBuffer(primitives.Length, Primitive.PrimitiveData.sizeOf());
+        var primitiveBuffer = new ComputeBuffer(primitives.Length, Primitive.PrimitiveData.SizeOf());
         primitiveBuffer.SetData(SceneData());
         
         mat.SetFloat(HFov, hFov);
@@ -55,14 +53,15 @@ public class ShaderRenderer : MonoBehaviour
     {
         if (!cam) cam = GetComponent<Camera>();
         if (!mat) mat = new Material(shader);
+        initialized = true;
     }
 
     private Primitive.PrimitiveData[] SceneData()
     {
         var primitiveData = new Primitive.PrimitiveData[primitives.Length];
-        for (int i = 0; i < primitives.Length; i++)
+        for (var i = 0; i < primitives.Length; i++)
         {
-            primitiveData[i] = primitives[i].data();
+            primitiveData[i] = primitives[i].Data();
         }
 
         return primitiveData;

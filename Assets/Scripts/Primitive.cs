@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Primitive : MonoBehaviour
@@ -13,7 +11,7 @@ public class Primitive : MonoBehaviour
         Sphere, Cube
     };
 
-    public PrimitiveData data()
+    public PrimitiveData Data()
     {
         var myTransform = transform;
         var typeOrdinal = Array.IndexOf(Enum.GetValues(type.GetType()), type);
@@ -33,10 +31,10 @@ public class Primitive : MonoBehaviour
         public int type;
         public Color color;
 
-        public static int sizeOf()
+        public static int SizeOf()
         {
-            var sizeofVector3 = sizeof(float) * 3;
-            var sizeofColor = sizeof(float) * 4;
+            const int sizeofVector3 = sizeof(float) * 3;
+            const int sizeofColor = sizeof(float) * 4;
             return 2 * sizeofVector3 + sizeofColor + sizeof(int);
         }
     }
