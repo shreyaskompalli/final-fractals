@@ -16,6 +16,6 @@ public class FirstPersonController : MonoBehaviour
     void Update()
     {
         var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
-        transform.Rotate(mouseSensitivity * cursorDelta);
+        transform.eulerAngles += mouseSensitivity * cursorDelta;
     }
 }
