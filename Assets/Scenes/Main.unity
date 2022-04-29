@@ -296,7 +296,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0.5, y: -0.37, z: -0.16}
+  m_LocalPosition: {x: 0.35, y: -0.37, z: 0.08}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -333,6 +333,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mouseSensitivity: 2
+  speed: 0.1
+  forwardKey: 119
+  leftKey: 97
+  downKey: 115
+  rightKey: 100
 --- !u!1 &1624788739
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,21 +1,38 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FirstPersonController : MonoBehaviour
 {
-    public float mouseSensitivity;
+    [SerializeField] private float mouseSensitivity;
     
+    [SerializeField] private float speed;
+    [SerializeField] private KeyCode forwardKey;
+    [SerializeField] private KeyCode leftKey;
+    [SerializeField] private KeyCode downKey;
+    [SerializeField] private KeyCode rightKey;
+
+    private Vector3 velocity;
+
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
         transform.eulerAngles += mouseSensitivity * cursorDelta;
+
+        velocity = new Vector3();
+        if (Input.GetKey(forwardKey))
+            velocity.z += speed;
+        if (Input.GetKey(downKey))
+            velocity.z -= speed;
+        if (Input.GetKey(leftKey))
+            velocity.x -= speed;
+        if (Input.GetKey(rightKey))
+            velocity.x += speed;
+        transform.position += transform.rotation * velocity;
     }
 }

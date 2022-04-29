@@ -1,13 +1,12 @@
-
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
 [ExecuteInEditMode]
 public class ShaderRenderer : MonoBehaviour
 {
-    public Shader shader;
-    public Primitive[] primitives;
-    public Light sceneLight;
+    [SerializeField] private Shader shader;
+    [SerializeField] private Primitive[] primitives;
+    [SerializeField] private Light sceneLight;
     
     private Camera cam;
     private Material mat;
