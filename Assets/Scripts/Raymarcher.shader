@@ -71,6 +71,33 @@ Shader "Unlit/Raymarcher"
                 return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
             }
 
+            float mengerSDF(float3 p, float3 origin, float3 sideLength)
+            {
+                float d = boxSDF(p, origin, sideLength);
+
+                float s = 1.0;
+
+                for (int m = 0; m < 3; m++) {
+                    
+                    float3 a = fmod((p - origin) * s, 2.0) - 1.0;
+
+                    s *= 3.0;
+
+                    float3 r = abs(1.0 - 3.0 * abs(a));
+
+                    float da = max(r.x, r.y);
+                    float db = max(r.y, r.z);
+                    float dc = max(r.z, r.x);
+                    float c = (min(da, min(db, dc)) - 1.0) / s;
+
+                    d = max(d, c);
+                }
+
+                return d;
+            }
+
+            
+
             // calls corresponding SDF function based on primitive type of PRIM
             float primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
@@ -83,6 +110,9 @@ Shader "Unlit/Raymarcher"
                     break;
                 case 1:
                     primSDF = boxSDF(samplePoint, prim.position, prim.scale);
+                    break;
+                case 2:
+                    primSDF = mengerSDF(samplePoint, prim.position, prim.scale);
                     break;
                 default:
                     primSDF = maxDist;
@@ -161,9 +191,14 @@ Shader "Unlit/Raymarcher"
                 // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
                 // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, z)));
 
+<<<<<<< HEAD
                 float2 xy = 2 * coords - 1.5; // screen coordinates in [-1.5, 0.5] range
                 // why do we subtract by 1.5 and not 1.0? i came up with 1.5 by pure guesswork
                 xy.x *= _ScreenParams.x / _ScreenParams.y; // scale by aspect ratio
+=======
+                float2 xy = 2 * coords - 1.5; // screen coordinates in [-1, 1] range
+                xy.x *= _ScreenParams.x / _ScreenParams.y;
+>>>>>>> 614b8ac (bugged mengerSDF)
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
                 
                 // setDebugOutput(float4(dir.xyz, 1));
@@ -188,6 +223,8 @@ Shader "Unlit/Raymarcher"
                 }
                 return backgroundColor;
             }
+
+            
 
             v2f vert(appdata v)
             {
