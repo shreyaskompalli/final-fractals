@@ -3,7 +3,7 @@ using UnityEngine;
 public class FirstPersonController : MonoBehaviour
 {
     [SerializeField] private float mouseSensitivity;
-    
+
     [SerializeField] private float speed;
     [SerializeField] private KeyCode forwardKey;
     [SerializeField] private KeyCode leftKey;
@@ -34,5 +34,7 @@ public class FirstPersonController : MonoBehaviour
         if (Input.GetKey(rightKey))
             velocity.x += speed;
         transform.position += transform.rotation * velocity;
+
+       
     }
 }

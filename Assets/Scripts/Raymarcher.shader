@@ -144,10 +144,10 @@ Shader "Unlit/Raymarcher"
             float3 generateRayDir(float2 coords)
             {
                 // proj 3-1 code courtesy of linda
-                float2 fov = float2(hFov, vFov);
-                float2 fovRad = fov * UNITY_PI / 180;
-                float2 camPos = 2 * tan(0.5 * fovRad) * coords - tan(0.5 * fovRad);
-                float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, 1.0f, 1.0f)).xyz);
+                // float2 fov = float2(hFov, vFov);
+                // float2 fovRad = fov * UNITY_PI / 180;
+                // float2 camPos = tan(0.5 * fovRad) * (2 * coords - 1);
+                // float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, 1.0f, 1.0f)).xyz);
 
                 // sebastian lague
                 // float4 dirImage = float4(coords, 0, 1);
@@ -156,11 +156,15 @@ Shader "Unlit/Raymarcher"
                 // float3 dir = normalize(dirWorld.xyz);
 
                 // jamie wong
-                // float2 scaledCoords = coords * _ScreenParams.xy;
-                // float2 xy = scaledCoords - _ScreenParams.xy / 2;
+                // float2 xy = _ScreenParams.xy * (coords - 1 / 2);
                 // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
-                // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, -z)));
+                // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, z)));
+
+                float2 xy = 2 * coords - 1; // screen coordinates in [-1, 1] range
+                xy.x *= _ScreenParams.x / _ScreenParams.y;
+                float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
                 // setDebugOutput(float4(dir.xyz, 1));
+
                 return dir;
             }
 
