@@ -73,27 +73,24 @@ Shader "Unlit/Raymarcher"
 
             float mengerSDF(float3 p, float3 origin, float3 sideLength)
             {
-                float d = boxSDF(p, origin, sideLength);
+                float distance = boxSDF(p, origin, sideLength);
+                float scale = 1.0;
 
-                float s = 1.0;
-
-                for (int m = 0; m < 3; m++) {
-                    
-                    float3 a = fmod((p - origin) * s, 2.0) - 1.0;
-
-                    s *= 3.0;
-
+                for (int i = 0; i < 3; i++) {
+                    // https://iquilezles.org/articles/menger/
+                    // TODO: rename one letter variables
+                    float3 a = fmod((p - origin) * scale, 2.0) - 1.0;
+                    scale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
 
                     float da = max(r.x, r.y);
                     float db = max(r.y, r.z);
                     float dc = max(r.z, r.x);
-                    float c = (min(da, min(db, dc)) - 1.0) / s;
+                    float c = (min(da, min(db, dc)) - 1.0) / scale;
 
-                    d = max(d, c);
+                    distance = max(distance, c);
                 }
-
-                return d;
+                return distance;
             }
 
             
@@ -191,18 +188,12 @@ Shader "Unlit/Raymarcher"
                 // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
                 // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, z)));
 
-<<<<<<< HEAD
                 float2 xy = 2 * coords - 1.5; // screen coordinates in [-1.5, 0.5] range
                 // why do we subtract by 1.5 and not 1.0? i came up with 1.5 by pure guesswork
                 xy.x *= _ScreenParams.x / _ScreenParams.y; // scale by aspect ratio
-=======
-                float2 xy = 2 * coords - 1.5; // screen coordinates in [-1, 1] range
-                xy.x *= _ScreenParams.x / _ScreenParams.y;
->>>>>>> 614b8ac (bugged mengerSDF)
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
                 
                 // setDebugOutput(float4(dir.xyz, 1));
-
                 return dir;
             }
 
