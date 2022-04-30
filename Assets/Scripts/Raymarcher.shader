@@ -29,7 +29,7 @@ Shader "Unlit/Raymarcher"
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
             
-            static const float EPSILON = 0.001f;
+            static const float EPSILON = 0.0001f;
             static const float maxDist = 9999.0f;
 
             // Material properties passed in from C#
@@ -71,24 +71,25 @@ Shader "Unlit/Raymarcher"
                 return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
             }
 
+            
             float mengerSDF(float3 p, float3 origin, float3 sideLength)
             {
                 float distance = boxSDF(p, origin, sideLength);
-                float scale = 1.0;
+                float crossScale = 1.0;
 
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 1; i++) {
                     // https://iquilezles.org/articles/menger/
                     // TODO: rename one letter variables
-                    float3 a = fmod((p - origin) * scale, 2.0) - 1.0;
-                    scale *= 3.0;
+                    float3 a = fmod((p - origin) * crossScale, 2.0) - 1;
+                    crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
 
                     float da = max(r.x, r.y);
                     float db = max(r.y, r.z);
                     float dc = max(r.z, r.x);
-                    float c = (min(da, min(db, dc)) - 1.0) / scale;
+                    float distCross = (min(da, min(db, dc)) - 1) / crossScale;
 
-                    distance = max(distance, c);
+                    distance = max(distance, distCross);
                 }
                 return distance;
             }
