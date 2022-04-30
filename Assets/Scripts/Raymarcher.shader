@@ -140,6 +140,7 @@ Shader "Unlit/Raymarcher"
 
             /**
              * Generates ray starting from camera passing through sensor plane at coords returns ray direction
+             * Coords are in range [0,1] for both x and y
              */
             float3 generateRayDir(float2 coords)
             {
@@ -163,6 +164,7 @@ Shader "Unlit/Raymarcher"
                 float2 xy = 2 * coords - 1; // screen coordinates in [-1, 1] range
                 xy.x *= _ScreenParams.x / _ScreenParams.y;
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
+                
                 // setDebugOutput(float4(dir.xyz, 1));
 
                 return dir;
