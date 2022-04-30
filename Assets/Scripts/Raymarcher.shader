@@ -161,8 +161,9 @@ Shader "Unlit/Raymarcher"
                 // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
                 // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, z)));
 
-                float2 xy = 2 * coords - 1; // screen coordinates in [-1, 1] range
-                xy.x *= _ScreenParams.x / _ScreenParams.y;
+                float2 xy = 2 * coords - 1.5; // screen coordinates in [-1.5, 0.5] range
+                // why do we subtract by 1.5 and not 1.0? i came up with 1.5 by pure guesswork
+                xy.x *= _ScreenParams.x / _ScreenParams.y; // scale by aspect ratio
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
                 
                 // setDebugOutput(float4(dir.xyz, 1));
