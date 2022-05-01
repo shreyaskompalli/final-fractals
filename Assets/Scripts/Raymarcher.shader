@@ -91,7 +91,7 @@ Shader "Unlit/Raymarcher"
                 float distance = boxSDF(p);
 
                 float crossScale = 1.0;
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
@@ -197,16 +197,61 @@ Shader "Unlit/Raymarcher"
                     k.xxx * sceneSDF(p + k.xxx * EPSILON));
             }
 
-            float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
+            float4 diffuse(float3 intersection, float3 normal, float kd, float4 primitiveColor)
             {
                 float r = distance(intersection, lightPos.xyz);
-                float3 n = calcNormal(intersection);
+                float3 n = normal;
                 float3 l = normalize(lightPos.xyz - intersection);
                 float lightStrength = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
                 return float4(lightStrength * primitiveColor);
             }
 
+            float4 specular(float3 intersection, float3 normal, float ks, float power, float4 primitiveColor)
+            {
+                float r = distance(intersection, lightPos.xyz);
+                float3 v = normalize(_WorldSpaceCameraPos - intersection);
+                float3 n = normal;
+                float3 l = normalize(lightPos.xyz - intersection);
+                float3 h = (v + l) / length(v + l);
+                float intensity = ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power);
+                return float4(intensity * primitiveColor);
+            }
+
+            float4 ambient(float ka, float4 primitiveColor)
+            {
+                return ka * primitiveColor;
+            }
+
+            float4 phong(float3 intersection, float ka, float kd, float ks, float specularPower, float4 primitiveColor)
+            {
+                float3 normal = calcNormal(intersection); // value is cached to reduce recomputation
+                return ambient(ka, primitiveColor) +
+                    diffuse(intersection, normal, kd, primitiveColor) +
+                    specular(intersection, normal, ks, specularPower, primitiveColor);
+            }
+
             // =================================== RAY MARCHING ================================
+
+            // sample code from jamie wong article
+            float4 rayMarch(int maxSteps, float3 dir)
+            {
+                float depth = 0;
+                for (int j = 0; j < maxSteps && depth < maxDist; ++j)
+                {
+                    float3 ray = _WorldSpaceCameraPos + depth * dir;
+                    float dist = sceneSDF(ray);
+                    if (dist < EPSILON)
+                    {
+                        PrimitiveData closest = closestPrimitive(ray);
+                        // no specular component (yet)
+                        float4 phongShading = phong(ray, 0.1, 0.75, 1.0, 100, closest.color);
+                        // fog effect
+                        return lerp(phongShading, backgroundColor, depth / maxDist);
+                    }
+                    depth += dist;
+                }
+                return backgroundColor;
+            }
 
             /**
              * Generates ray starting from camera passing through sensor plane at coords returns ray direction
@@ -239,28 +284,6 @@ Shader "Unlit/Raymarcher"
                 // setDebugOutput(float4(dir.xyz, 1));
                 return dir;
             }
-
-            // sample code from jamie wong article
-            float4 rayMarch(int maxSteps, float3 dir)
-            {
-                float depth = 0;
-                for (int j = 0; j < maxSteps && depth < maxDist; ++j)
-                {
-                    float3 ray = _WorldSpaceCameraPos + depth * dir;
-                    float dist = sceneSDF(ray);
-                    if (dist < EPSILON)
-                    {
-                        PrimitiveData closest = closestPrimitive(ray);
-                        // no specular component (yet)
-                        float4 phong = diffuseShading(ray, 1.00, closest.color) + 0.2 * closest.color;
-                        // fog effect
-                        return lerp(phong, backgroundColor, depth / maxDist);
-                    }
-                    depth += dist;
-                }
-                return backgroundColor;
-            }
-
 
             v2f vert(appdata v)
             {
