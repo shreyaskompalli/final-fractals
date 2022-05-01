@@ -29,7 +29,7 @@ Shader "Unlit/Raymarcher"
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
 
-            static const float EPSILON = 0.0001f;
+            static const float EPSILON = 0.01f;
             static const float maxDist = 9999.0f;
 
             // Material properties passed in from C#
@@ -79,39 +79,23 @@ Shader "Unlit/Raymarcher"
                 return min(d.x, min(d.y, d.z)) - 1.0;
             }
 
-            // https://www.shadertoy.com/view/MdfBWr
+            // returns x mod y
+            float3 modvec(float3 x, float y)
+            {
+                return x - (y * floor(x / y));
+            }
+
+            // https://lucodivo.github.io/menger_sponge.html
             float mengerSDF(float3 p)
             {
-                /*
-                float distance = boxSDF(p, origin, sideLength);
-                float crossScale = 1;
-
-                for (int i = 0; i < 1; i++) {
-                    // https://iquilezles.org/articles/menger/
-                    // TODO: rename one letter variables
-                    float3 a = fmod((p - origin) * crossScale, 2.0) - 1;
-                    crossScale *= 3.0;
-                    float3 r = abs(1 - 3.0 * abs(a));
-
-                    float da = max(r.x, r.y);
-                    float db = max(r.y, r.z);
-                    float dc = max(r.z, r.x);
-                    float distCross = (min(da, min(db, dc)) - 1) / crossScale;
-                    distCross = crossSDF(p, a, sideLength / crossScale);
-
-                    distance = max(distance, -distCross);
-                }
-                return distance;
-                */
-                
                 float distance = boxSDF(p);
 
                 float holeWidth = 1.0 / 3.0;
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     float holeDist = holeWidth * 6.0;
-                    float3 q = fmod(p + holeWidth, holeDist) - holeWidth;
-                    float distCross = crossSDF(q);
+                    float3 q = modvec(p + holeWidth, holeDist) - holeWidth;
+                    float distCross = crossSDF(q / holeWidth) * holeWidth;
 
                     holeWidth = holeWidth / 3.0; // reduce hole size for next iter
                     distance = max(distance, -distCross);
