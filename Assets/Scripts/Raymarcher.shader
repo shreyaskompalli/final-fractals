@@ -1,14 +1,7 @@
 Shader "Unlit/Raymarcher"
 {
-    Properties {}
     SubShader
     {
-        Tags
-        {
-            "RenderType"="Opaque"
-        }
-        LOD 100
-
         Pass
         {
             CGPROGRAM
@@ -25,10 +18,22 @@ Shader "Unlit/Raymarcher"
                 float4 color;
             };
 
+            struct appdata
+            {
+                float4 vertex : POSITION;
+            };
+
+            struct v2f
+            {
+                float4 vertex : SV_POSITION;
+                float4 scrPos : TEXCOORD1;
+            };
+
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
 
+            // ray marcher parameters
             static const float EPSILON = 0.0003f;
             static const float maxDist = 25.0f;
             static const int maxSteps = 99;
@@ -42,16 +47,7 @@ Shader "Unlit/Raymarcher"
             float4 lightPos;
             float lightIntensity;
 
-            struct appdata
-            {
-                float4 vertex : POSITION;
-            };
-
-            struct v2f
-            {
-                float4 vertex : SV_POSITION;
-                float4 scrPos : TEXCOORD1;
-            };
+            // =================================== UTILITIES ===================================
 
             // returns x mod y
             float3 modvec(float3 x, float y)
@@ -65,6 +61,8 @@ Shader "Unlit/Raymarcher"
                 debug = 1;
                 debugOutputColor = color;
             }
+
+            // =================================== SDFs =========================================
 
             float sphereSDF(float3 p)
             {
@@ -102,9 +100,9 @@ Shader "Unlit/Raymarcher"
                     float da = max(r.x, r.y);
                     float db = max(r.y, r.z);
                     float dc = max(r.z, r.x);
-                    float c = (min(da, min(db, dc)) - 1.0) / crossScale;
+                    float crossDist = (min(da, min(db, dc)) - 1.0) / crossScale;
 
-                    distance = max(distance, c);
+                    distance = max(distance, crossDist);
                 }
                 return distance;
             }
@@ -112,19 +110,19 @@ Shader "Unlit/Raymarcher"
             // http://blog.hvidtfeldts.net/index.php/2011/08/distance-estimated-3d-fractals-iii-folding-space/
             float sierpinskiSDF(float3 p)
             {
-                float Scale = 2.0;
-                float Offset = 3.0;
+                float scale = 2.0;
+                float offset = 3.0;
 
-                int n = 0;
-                while (n < 15)
+                int i = 0;
+                while (i < 15)
                 {
                     if (p.x + p.y < 0.0) p.xy = -p.yx; // fold 1
                     if (p.x + p.z < 0.0) p.xz = -p.zx; // fold 2
                     if (p.y + p.z < 0.0) p.zy = -p.yz; // fold 3
-                    p = p * Scale - Offset * (Scale - 1.0);
-                    n++;
+                    p = p * scale - offset * (scale - 1.0);
+                    i++;
                 }
-                return length(p) * pow(Scale, -float(n));
+                return length(p) * pow(scale, -float(i));
             }
 
             // calls corresponding SDF function based on primitive type of PRIM
@@ -187,6 +185,8 @@ Shader "Unlit/Raymarcher"
                 return closest;
             }
 
+            // =================================== LIGHTING =====================================
+
             // from seb lague
             float3 calcNormal(float3 p, float dx)
             {
@@ -204,6 +204,9 @@ Shader "Unlit/Raymarcher"
                 float lightStrength = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
                 return float4(lightStrength * primitiveColor);
             }
+
+
+            // =================================== RAY MARCHING ================================
 
             /**
              * Generates ray starting from camera passing through sensor plane at coords returns ray direction
