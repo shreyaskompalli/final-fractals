@@ -29,7 +29,7 @@ Shader "Unlit/Raymarcher"
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
 
-            static const float EPSILON = 0.01f;
+            static const float EPSILON = 0.0003f;
             static const float maxDist = 9999.0f;
 
             // Material properties passed in from C#
@@ -85,22 +85,26 @@ Shader "Unlit/Raymarcher"
                 return min(d.x, min(d.y, d.z)) - 1.0;
             }
 
-            // https://lucodivo.github.io/menger_sponge.html
+            // https://lucodivo.github.io/menger_sponge.html for explanation
+            // https://iquilezles.org/articles/menger/ for optimized SDF
             float mengerSDF(float3 p)
             {
                 float distance = boxSDF(p);
 
-                float holeWidth = 1.0 / 3.0;
-                for (int i = 0; i < 10; i++)
+                float crossScale = 1.0;
+                for (int i = 0; i < 6; i++)
                 {
-                    float holeDist = holeWidth * 6.0;
-                    float3 q = modvec(p + holeWidth, holeDist) - holeWidth;
-                    float distCross = crossSDF(q / holeWidth) * holeWidth;
+                    float3 a = modvec(p * crossScale, 2.0) - 1.0;
+                    crossScale *= 3.0;
+                    float3 r = abs(1.0 - 3.0 * abs(a));
 
-                    holeWidth = holeWidth / 3.0; // reduce hole size for next iter
-                    distance = max(distance, -distCross);
+                    float da = max(r.x, r.y);
+                    float db = max(r.y, r.z);
+                    float dc = max(r.z, r.x);
+                    float c = (min(da, min(db, dc)) - 1.0) / crossScale;
+
+                    distance = max(distance, c);
                 }
-
                 return distance;
             }
 
@@ -246,8 +250,9 @@ Shader "Unlit/Raymarcher"
                         return diffuseShading(ray, 1.00, closest.color) + 0.2 * closest.color;
                     }
                     depth += dist;
+                    if (depth > maxDist) break;
                 }
-                return backgroundColor;
+                return depth / maxDist * backgroundColor;
             }
 
 
@@ -264,7 +269,7 @@ Shader "Unlit/Raymarcher"
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
                 float2 screenUV = i.scrPos.xy / i.scrPos.w; // in range [0, 1]
                 float3 dir = generateRayDir(screenUV);
-                float4 output = rayMarch(32, dir);
+                float4 output = rayMarch(64, dir);
                 return debug == 1 ? debugOutputColor : output;
             }
             ENDCG
