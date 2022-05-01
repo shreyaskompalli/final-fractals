@@ -91,7 +91,7 @@ Shader "Unlit/Raymarcher"
                 float distance = boxSDF(p);
 
                 float crossScale = 1.0;
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 11; i++)
                 {
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
@@ -244,7 +244,7 @@ Shader "Unlit/Raymarcher"
                     {
                         PrimitiveData closest = closestPrimitive(ray);
                         // no specular component (yet)
-                        float4 phongShading = phong(ray, 0.1, 0.75, 1.0, 100, closest.color);
+                        float4 phongShading = phong(ray, 0.25, 0.75, 0.5, 100, closest.color);
                         // fog effect
                         return lerp(phongShading, backgroundColor, depth / maxDist);
                     }
