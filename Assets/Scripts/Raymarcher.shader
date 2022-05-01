@@ -104,6 +104,7 @@ Shader "Unlit/Raymarcher"
                 return distance;
             }
 
+            // http://blog.hvidtfeldts.net/index.php/2011/08/distance-estimated-3d-fractals-iii-folding-space/
             float sierpinskiSDF(float3 p)
             {
                 float Scale = 2.0;
