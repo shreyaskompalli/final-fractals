@@ -52,6 +52,12 @@ Shader "Unlit/Raymarcher"
                 float4 scrPos : TEXCOORD1;
             };
 
+            // returns x mod y
+            float3 modvec(float3 x, float y)
+            {
+                return x - (y * floor(x / y));
+            }
+
             // Overrides the normal fragment shader output and instead outputs COLOR to the screen
             void setDebugOutput(float4 color)
             {
@@ -77,12 +83,6 @@ Shader "Unlit/Raymarcher"
                 float3 sample = abs(p);
                 float3 d = float3(max(sample.x, sample.y), max(sample.y, sample.z), max(sample.z, sample.x));
                 return min(d.x, min(d.y, d.z)) - 1.0;
-            }
-
-            // returns x mod y
-            float3 modvec(float3 x, float y)
-            {
-                return x - (y * floor(x / y));
             }
 
             // https://lucodivo.github.io/menger_sponge.html
