@@ -8,7 +8,7 @@ public class Primitive : MonoBehaviour
 
     public enum PrimitiveType
     {
-        Sphere, Cube, Menger
+        Sphere, Cube, Menger, Cross
     };
 
     public PrimitiveData Data()

@@ -71,18 +71,25 @@ Shader "Unlit/Raymarcher"
                 return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
             }
 
-            
-            float mengerSDF(float3 p, float3 origin, float3 sideLength)
+            // source: https://www.shadertoy.com/view/WtfXzj
+            float crossSDF(float3 p, float3 origin, float3 scale)
+            {
+                float3 sample = abs(p - origin);
+                float3 d = float3(max(sample.x, sample.y), max(sample.y, sample.z), max(sample.z, sample.x));
+                return min(d.x, min(d.y, d.z)) - scale;
+            }
+
+            float mengerSDF(float3 p, float3 origin, float sideLength)
             {
                 float distance = boxSDF(p, origin, sideLength);
                 float crossScale = 1.0;
 
-                for (int i = 0; i < 1; i++) {
+                for (int i = 0; i < 4; i++) {
                     // https://iquilezles.org/articles/menger/
                     // TODO: rename one letter variables
                     float3 a = fmod((p - origin) * crossScale, 2.0) - 1;
                     crossScale *= 3.0;
-                    float3 r = abs(1.0 - 3.0 * abs(a));
+                    float3 r = abs(1 - 3.0 * abs(a));
 
                     float da = max(r.x, r.y);
                     float db = max(r.y, r.z);
@@ -93,8 +100,6 @@ Shader "Unlit/Raymarcher"
                 }
                 return distance;
             }
-
-            
 
             // calls corresponding SDF function based on primitive type of PRIM
             float primitiveSDF(PrimitiveData prim, float3 samplePoint)
@@ -110,7 +115,13 @@ Shader "Unlit/Raymarcher"
                     primSDF = boxSDF(samplePoint, prim.position, prim.scale);
                     break;
                 case 2:
-                    primSDF = mengerSDF(samplePoint, prim.position, prim.scale);
+                    // primSDF = mengerSDF(samplePoint, prim.position, prim.scale);
+                    float boxDist = boxSDF(samplePoint, prim.position, prim.scale);
+                    float crossDist = crossSDF(samplePoint, prim.position, prim.scale / 3);
+                    primSDF = max(boxDist, -crossDist);
+                    break;
+                case 3:
+                    primSDF = crossSDF(samplePoint, prim.position, prim.scale);
                     break;
                 default:
                     primSDF = maxDist;
