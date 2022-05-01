@@ -104,6 +104,23 @@ Shader "Unlit/Raymarcher"
                 return distance;
             }
 
+            float sierpinskiSDF(float3 p)
+            {
+                float Scale = 2.0;
+                float Offset = 3.0;
+
+                int n = 0;
+                while (n < 15)
+                {
+                    if (p.x + p.y < 0.0) p.xy = -p.yx; // fold 1
+                    if (p.x + p.z < 0.0) p.xz = -p.zx; // fold 2
+                    if (p.y + p.z < 0.0) p.zy = -p.yz; // fold 3
+                    p = p * Scale - Offset * (Scale - 1.0);
+                    n++;
+                }
+                return length(p) * pow(Scale, -float(n));
+            }
+
             // calls corresponding SDF function based on primitive type of PRIM
             float primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
@@ -121,12 +138,12 @@ Shader "Unlit/Raymarcher"
                     break;
                 case 2:
                     primSDF = mengerSDF(translated);
-                // float boxDist = boxSDF(samplePoint, prim.position, prim.scale);
-                // float crossDist = crossSDF(samplePoint, prim.position, prim.scale / 3);
-                // primSDF = max(boxDist, -crossDist);
                     break;
                 case 3:
                     primSDF = crossSDF(translated);
+                    break;
+                case 4:
+                    primSDF = sierpinskiSDF(translated);
                     break;
                 default:
                     primSDF = maxDist / prim.scale;
