@@ -10,8 +10,6 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private KeyCode downKey;
     [SerializeField] private KeyCode rightKey;
 
-    private Vector3 velocity;
-
     // Start is called before the first frame update
     private void Start()
     {
@@ -24,7 +22,7 @@ public class FirstPersonController : MonoBehaviour
         var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
         transform.eulerAngles += mouseSensitivity * cursorDelta;
 
-        velocity = new Vector3();
+        var velocity = new Vector3();
         if (Input.GetKey(forwardKey))
             velocity.z += speed;
         if (Input.GetKey(downKey))
