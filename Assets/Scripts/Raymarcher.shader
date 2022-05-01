@@ -28,7 +28,7 @@ Shader "Unlit/Raymarcher"
             // Used to hold output to screen if DEBUG is true
             float debug = 0; // for some reason bool doesn't work
             float4 debugOutputColor;
-            
+
             static const float EPSILON = 0.0001f;
             static const float maxDist = 9999.0f;
 
@@ -59,32 +59,34 @@ Shader "Unlit/Raymarcher"
                 debugOutputColor = color;
             }
 
-            float sphereSDF(float3 p, float3 origin, float radius)
+            float sphereSDF(float3 p)
             {
-                return distance(p, origin) - radius;
+                return length(p) - 1.0;
             }
 
-            float boxSDF(float3 p, float3 origin, float3 sideLength)
+            float boxSDF(float3 p)
             {
                 // return length(max(abs(p)-b,0.0));
-                float3 q = abs(p - origin) - sideLength;
+                float3 q = abs(p) - 1.0;
                 return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
             }
 
             // source: https://www.shadertoy.com/view/WtfXzj
-            float crossSDF(float3 p, float3 origin, float3 scale)
+            float crossSDF(float3 p)
             {
-                float3 sample = abs(p - origin);
+                float3 sample = abs(p);
                 float3 d = float3(max(sample.x, sample.y), max(sample.y, sample.z), max(sample.z, sample.x));
-                return min(d.x, min(d.y, d.z)) - scale;
+                return min(d.x, min(d.y, d.z)) - 1.0;
             }
 
-            float mengerSDF(float3 p, float3 origin, float sideLength)
+            // https://www.shadertoy.com/view/MdfBWr
+            float mengerSDF(float3 p)
             {
+                /*
                 float distance = boxSDF(p, origin, sideLength);
-                float crossScale = 1.0;
+                float crossScale = 1;
 
-                for (int i = 0; i < 4; i++) {
+                for (int i = 0; i < 1; i++) {
                     // https://iquilezles.org/articles/menger/
                     // TODO: rename one letter variables
                     float3 a = fmod((p - origin) * crossScale, 2.0) - 1;
@@ -95,9 +97,26 @@ Shader "Unlit/Raymarcher"
                     float db = max(r.y, r.z);
                     float dc = max(r.z, r.x);
                     float distCross = (min(da, min(db, dc)) - 1) / crossScale;
+                    distCross = crossSDF(p, a, sideLength / crossScale);
 
-                    distance = max(distance, distCross);
+                    distance = max(distance, -distCross);
                 }
+                return distance;
+                */
+                
+                float distance = boxSDF(p);
+
+                float holeWidth = 1.0 / 3.0;
+                for (int i = 0; i < 3; i++)
+                {
+                    float holeDist = holeWidth * 6.0;
+                    float3 q = fmod(p + holeWidth, holeDist) - holeWidth;
+                    float distCross = crossSDF(q);
+
+                    holeWidth = holeWidth / 3.0; // reduce hole size for next iter
+                    distance = max(distance, -distCross);
+                }
+
                 return distance;
             }
 
@@ -105,29 +124,31 @@ Shader "Unlit/Raymarcher"
             float primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
                 float primSDF;
+                // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/#uniform-scaling
+                float3 translated = (samplePoint - prim.position) / prim.scale;
                 switch (prim.type)
                 {
                 // see Primitive.PrimitiveType enum for int to type mapping
                 case 0:
-                    primSDF = sphereSDF(samplePoint, prim.position, prim.scale);
+                    primSDF = sphereSDF(translated);
                     break;
                 case 1:
-                    primSDF = boxSDF(samplePoint, prim.position, prim.scale);
+                    primSDF = boxSDF(translated);
                     break;
                 case 2:
-                    // primSDF = mengerSDF(samplePoint, prim.position, prim.scale);
-                    float boxDist = boxSDF(samplePoint, prim.position, prim.scale);
-                    float crossDist = crossSDF(samplePoint, prim.position, prim.scale / 3);
-                    primSDF = max(boxDist, -crossDist);
+                    primSDF = mengerSDF(translated);
+                // float boxDist = boxSDF(samplePoint, prim.position, prim.scale);
+                // float crossDist = crossSDF(samplePoint, prim.position, prim.scale / 3);
+                // primSDF = max(boxDist, -crossDist);
                     break;
                 case 3:
-                    primSDF = crossSDF(samplePoint, prim.position, prim.scale);
+                    primSDF = crossSDF(translated);
                     break;
                 default:
-                    primSDF = maxDist;
+                    primSDF = maxDist / prim.scale;
                     break;
                 }
-                return primSDF;
+                return primSDF * prim.scale;
             }
 
             // takes min over SDF of all primitives in scene
@@ -141,7 +162,7 @@ Shader "Unlit/Raymarcher"
                 }
                 return minSDF;
             }
-            
+
             PrimitiveData closestPrimitive(float3 samplePoint)
             {
                 float minSDF = maxDist; // some arbitrarily large value; there's no float.INFINITY
@@ -204,7 +225,7 @@ Shader "Unlit/Raymarcher"
                 // why do we subtract by 1.5 and not 1.0? i came up with 1.5 by pure guesswork
                 xy.x *= _ScreenParams.x / _ScreenParams.y; // scale by aspect ratio
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
-                
+
                 // setDebugOutput(float4(dir.xyz, 1));
                 return dir;
             }
@@ -227,7 +248,6 @@ Shader "Unlit/Raymarcher"
                 return backgroundColor;
             }
 
-            
 
             v2f vert(appdata v)
             {
