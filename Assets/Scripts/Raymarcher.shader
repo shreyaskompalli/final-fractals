@@ -187,24 +187,24 @@ Shader "Unlit/Raymarcher"
 
             // =================================== LIGHTING =====================================
 
-            // from seb lague
-            float3 calcNormal(float3 p, float dx)
+            // https://iquilezles.org/articles/normalsSDF/
+            float3 calcNormal(float3 p)
             {
-                float x = sceneSDF(float3(p.x + dx, p.y, p.z)) - sceneSDF(float3(p.x - dx, p.y, p.z));
-                float y = sceneSDF(float3(p.x, p.y + dx, p.z)) - sceneSDF(float3(p.x, p.y - dx, p.z));
-                float z = sceneSDF(float3(p.x, p.y, p.z + dx)) - sceneSDF(float3(p.x, p.y, p.z - dx));
-                return normalize(float3(x, y, z));
+                const float2 k = float2(1, -1);
+                return normalize(k.xyy * sceneSDF(p + k.xyy * EPSILON) +
+                    k.yyx * sceneSDF(p + k.yyx * EPSILON) +
+                    k.yxy * sceneSDF(p + k.yxy * EPSILON) +
+                    k.xxx * sceneSDF(p + k.xxx * EPSILON));
             }
 
             float4 diffuseShading(float3 intersection, float kd, float4 primitiveColor)
             {
                 float r = distance(intersection, lightPos.xyz);
-                float3 n = calcNormal(intersection, EPSILON);
+                float3 n = calcNormal(intersection);
                 float3 l = normalize(lightPos.xyz - intersection);
                 float lightStrength = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
                 return float4(lightStrength * primitiveColor);
             }
-
 
             // =================================== RAY MARCHING ================================
 
