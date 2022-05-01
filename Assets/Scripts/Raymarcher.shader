@@ -30,7 +30,8 @@ Shader "Unlit/Raymarcher"
             float4 debugOutputColor;
 
             static const float EPSILON = 0.0003f;
-            static const float maxDist = 9999.0f;
+            static const float maxDist = 25.0f;
+            static const int maxSteps = 99;
 
             // Material properties passed in from C#
             float hFov;
@@ -240,19 +241,21 @@ Shader "Unlit/Raymarcher"
             float4 rayMarch(int maxSteps, float3 dir)
             {
                 float depth = 0;
-                for (int j = 0; j < maxSteps; ++j)
+                for (int j = 0; j < maxSteps && depth < maxDist; ++j)
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
                     if (dist < EPSILON)
                     {
                         PrimitiveData closest = closestPrimitive(ray);
-                        return diffuseShading(ray, 1.00, closest.color) + 0.2 * closest.color;
+                        // no specular component (yet)
+                        float4 phong = diffuseShading(ray, 1.00, closest.color) + 0.2 * closest.color;
+                        // fog effect
+                        return lerp(phong, backgroundColor, depth / maxDist);
                     }
                     depth += dist;
-                    if (depth > maxDist) break;
                 }
-                return depth / maxDist * backgroundColor;
+                return backgroundColor;
             }
 
 
@@ -269,7 +272,7 @@ Shader "Unlit/Raymarcher"
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
                 float2 screenUV = i.scrPos.xy / i.scrPos.w; // in range [0, 1]
                 float3 dir = generateRayDir(screenUV);
-                float4 output = rayMarch(64, dir);
+                float4 output = rayMarch(maxSteps, dir);
                 return debug == 1 ? debugOutputColor : output;
             }
             ENDCG
