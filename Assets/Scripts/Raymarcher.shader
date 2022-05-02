@@ -150,19 +150,18 @@ Shader "Unlit/Raymarcher"
             float mandelbulbSDF(float3 p)
             {
                 float3 z = p;
-                float power = 8.0;
                 float dr = 1.0;
                 float r = 0.0;
 
                 for (int i = 0; i < 15; i++)
                 {
-                    p = rotatePoint(p, _SinTime, _CosTime, 0);
+                    float sinTime = sin(_Time / 8);
+                    float power = 10 * abs(sinTime);
+                    p = rotatePoint(p, sinTime, sinTime, 0);
                     r = length(z);
 
                     if (r > 2)
-                    {
                         break;
-                    }
 
                     // convert to polar coordinates
                     float theta = acos(z.z / r);
@@ -315,7 +314,7 @@ Shader "Unlit/Raymarcher"
                     {
                         PrimitiveData closest = closestPrimitive(ray);
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
-                        float4 finalColor = phong(ray, normal, 0.25, 0.75, 0.5, 100, closest.color);
+                        float4 finalColor = phong(ray, normal, 0.25, 0.5, 0.5, 100, closest.color);
                         finalColor *= pow(ambientOcclusion(ray, normal, 0.015, 20), 40);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, depth / maxDist);
