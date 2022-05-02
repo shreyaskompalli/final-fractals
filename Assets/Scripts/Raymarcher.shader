@@ -113,7 +113,7 @@ Shader "Unlit/Raymarcher"
                 float crossScale = 1.0;
                 for (int i = 0; i < 11; i++)
                 {
-                p = rotatePoint(p, _SinTime,  _CosTime, 0);
+                    p = rotatePoint(p, _SinTime, _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
@@ -146,6 +146,41 @@ Shader "Unlit/Raymarcher"
                 return length(p) * pow(scale, -float(i));
             }
 
+            // http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
+            float mandelbulbSDF(float3 p)
+            {
+                float3 z = p;
+                float power = 8.0;
+                float dr = 1.0;
+                float r = 0.0;
+
+                for (int i = 0; i < 15; i++)
+                {
+                    p = rotatePoint(p, _SinTime, _CosTime, 0);
+                    r = length(z);
+
+                    if (r > 2)
+                    {
+                        break;
+                    }
+
+                    // convert to polar coordinates
+                    float theta = acos(z.z / r);
+                    float phi = atan2(z.y, z.x);
+                    dr = pow(r, power - 1.0) * power * dr + 1.0;
+
+                    // scale and rotate the point
+                    float zr = pow(r, power);
+                    theta = theta * power;
+                    phi = phi * power;
+
+                    // convert back to cartesian coordinates
+                    z = zr * float3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
+                    z += p;
+                }
+                return 0.5 * log(r) * r / dr;
+            }
+
             // calls corresponding SDF function based on primitive type of PRIM
             float primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
@@ -169,6 +204,9 @@ Shader "Unlit/Raymarcher"
                     break;
                 case 4:
                     primSDF = sierpinskiSDF(translated);
+                    break;
+                case 5:
+                    primSDF = mandelbulbSDF(translated);
                     break;
                 default:
                     primSDF = maxDist / prim.scale;

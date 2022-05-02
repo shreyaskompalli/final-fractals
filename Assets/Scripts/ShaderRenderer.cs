@@ -45,7 +45,7 @@ public class ShaderRenderer : MonoBehaviour
         
         Graphics.Blit(src, dest, mat);
         // TODO: getting warning saying primitiveBuffer is garbage collected
-        primitiveBuffer.Dispose();
+        primitiveBuffer.Release();
     }
 
     private void Init()
