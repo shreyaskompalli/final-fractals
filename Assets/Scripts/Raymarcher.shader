@@ -113,7 +113,7 @@ Shader "Unlit/Raymarcher"
                 float crossScale = 1.0;
                 for (int i = 0; i < 11; i++)
                 {
-                    p = rotatePoint(p, _SinTime, _CosTime, 0);
+                    // p = rotatePoint(p, _SinTime, _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
@@ -278,14 +278,14 @@ Shader "Unlit/Raymarcher"
                 return ka + diffuse(intersection, normal, kd) + specular(intersection, normal, ks, specularPower);
             }
 
-            float ambientOcclusion(float3 intersection, float3 normal, float step_dist, float step_nbr)
+            float ambientOcclusion(float3 intersection, float3 normal, float stepDist, float numSteps)
             {
                 float occlusion = 1.0f;
-                while (step_nbr > 0.0)
+                while (numSteps > 0.0)
                 {
-                    occlusion -= pow(step_nbr * step_dist -
-                                     sceneSDF(intersection + normal * step_nbr * step_dist), 2) / step_nbr;
-                    step_nbr--;
+                    occlusion -= pow(numSteps * stepDist -
+                                     sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps;
+                    numSteps--;
                 }
                 return occlusion;
             }
@@ -296,7 +296,7 @@ Shader "Unlit/Raymarcher"
             float4 rayMarch(int maxSteps, float3 dir)
             {
                 float depth = 0;
-                for (int j = 0; j < maxSteps && depth < maxDist; ++j)
+                for (int j = 0; j < maxSteps && depth < maxDist; j++)
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
@@ -306,7 +306,7 @@ Shader "Unlit/Raymarcher"
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
                         finalColor *= phong(ray, normal, 0.25, 0.5, 0.5, 100);
-                        finalColor *= pow(ambientOcclusion(ray, normal, 0.015, 20), 40);
+                        finalColor *= pow(ambientOcclusion(ray, normal, 0.05, 5), 50);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, depth / maxDist);
                         return finalColor;
