@@ -62,6 +62,26 @@ Shader "Unlit/Raymarcher"
                 debugOutputColor = color;
             }
 
+            // returns point p rotated around z axis by zRad, then y axis by yRad, then x axis by xRad in radians
+            // https://cs184.eecs.berkeley.edu/sp22/lecture/4-46/transforms
+            float3 rotatePoint(float3 p, float xRad, float yRad, float zRad)
+            {
+                float4x4 rX = float4x4(1, 0, 0, 0,
+                                       0, cos(xRad), -sin(xRad), 0,
+                                       0, sin(xRad), cos(xRad), 0,
+                                       0, 0, 0, 1);
+                float4x4 rY = float4x4(cos(yRad), 0, sin(yRad), 0,
+                                       0, 1, 0, 0,
+                                       -sin(yRad), 0, cos(yRad), 0,
+                                       0, 0, 0, 1);
+                float4x4 rZ = float4x4(cos(zRad), -sin(zRad), 0, 0,
+                                       sin(zRad), cos(zRad), 0, 0,
+                                       0, 0, 1, 0,
+                                       0, 0, 0, 1);
+                float4 homogenous = mul(rX, mul(rY, mul(rZ, float4(p, 1))));
+                return homogenous.xyz;
+            }
+
             // =================================== SDFs =========================================
 
             float sphereSDF(float3 p)
@@ -93,6 +113,7 @@ Shader "Unlit/Raymarcher"
                 float crossScale = 1.0;
                 for (int i = 0; i < 11; i++)
                 {
+                p = rotatePoint(p, _SinTime,  _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
@@ -222,12 +243,24 @@ Shader "Unlit/Raymarcher"
                 return ka * primitiveColor;
             }
 
-            float4 phong(float3 intersection, float ka, float kd, float ks, float specularPower, float4 primitiveColor)
+            float4 phong(float3 intersection, float3 normal, float ka, float kd, float ks, float specularPower,
+                         float4 primitiveColor)
             {
-                float3 normal = calcNormal(intersection); // value is cached to reduce recomputation
                 return ambient(ka, primitiveColor) +
                     diffuse(intersection, normal, kd, primitiveColor) +
                     specular(intersection, normal, ks, specularPower, primitiveColor);
+            }
+
+            float ambientOcclusion(float3 intersection, float3 normal, float step_dist, float step_nbr)
+            {
+                float occlusion = 1.0f;
+                while (step_nbr > 0.0)
+                {
+                    occlusion -= pow(step_nbr * step_dist -
+                                     sceneSDF(intersection + normal * step_nbr * step_dist), 2) / step_nbr;
+                    step_nbr--;
+                }
+                return occlusion;
             }
 
             // =================================== RAY MARCHING ================================
@@ -243,9 +276,12 @@ Shader "Unlit/Raymarcher"
                     if (dist < EPSILON)
                     {
                         PrimitiveData closest = closestPrimitive(ray);
-                        float4 phongShading = phong(ray, 0.25, 0.75, 0.5, 100, closest.color);
+                        float3 normal = calcNormal(ray); // value is cached to reduce recomputation
+                        float4 finalColor = phong(ray, normal, 0.25, 0.75, 0.5, 100, closest.color);
+                        finalColor *= pow(ambientOcclusion(ray, normal, 0.015, 20), 40);
                         // fog effect
-                        return lerp(phongShading, backgroundColor, depth / maxDist);
+                        finalColor = lerp(finalColor, backgroundColor, depth / maxDist);
+                        return finalColor;
                     }
                     depth += dist;
                 }

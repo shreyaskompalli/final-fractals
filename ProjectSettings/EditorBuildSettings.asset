@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Giant Menger.unity
+    guid: c7141794f2615954e9c5f2182dc43aa8
   m_configObjects: {}
