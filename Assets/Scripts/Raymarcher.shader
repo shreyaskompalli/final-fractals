@@ -243,7 +243,6 @@ Shader "Unlit/Raymarcher"
                     if (dist < EPSILON)
                     {
                         PrimitiveData closest = closestPrimitive(ray);
-                        // no specular component (yet)
                         float4 phongShading = phong(ray, 0.25, 0.75, 0.5, 100, closest.color);
                         // fog effect
                         return lerp(phongShading, backgroundColor, depth / maxDist);
