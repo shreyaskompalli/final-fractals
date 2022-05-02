@@ -255,37 +255,27 @@ Shader "Unlit/Raymarcher"
                     k.xxx * sceneSDF(p + k.xxx * EPSILON));
             }
 
-            float4 diffuse(float3 intersection, float3 normal, float kd, float4 primitiveColor)
+            float diffuse(float3 intersection, float3 normal, float kd)
             {
                 float r = distance(intersection, lightPos.xyz);
                 float3 n = normal;
                 float3 l = normalize(lightPos.xyz - intersection);
-                float lightStrength = kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
-                return float4(lightStrength * primitiveColor);
+                return kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
             }
 
-            float4 specular(float3 intersection, float3 normal, float ks, float power, float4 primitiveColor)
+            float specular(float3 intersection, float3 normal, float ks, float power)
             {
                 float r = distance(intersection, lightPos.xyz);
                 float3 v = normalize(_WorldSpaceCameraPos - intersection);
                 float3 n = normal;
                 float3 l = normalize(lightPos.xyz - intersection);
                 float3 h = (v + l) / length(v + l);
-                float intensity = ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power);
-                return float4(intensity * primitiveColor);
+                return ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power);
             }
 
-            float4 ambient(float ka, float4 primitiveColor)
+            float phong(float3 intersection, float3 normal, float ka, float kd, float ks, float specularPower)
             {
-                return ka * primitiveColor;
-            }
-
-            float4 phong(float3 intersection, float3 normal, float ka, float kd, float ks, float specularPower,
-                         float4 primitiveColor)
-            {
-                return ambient(ka, primitiveColor) +
-                    diffuse(intersection, normal, kd, primitiveColor) +
-                    specular(intersection, normal, ks, specularPower, primitiveColor);
+                return ka + diffuse(intersection, normal, kd) + specular(intersection, normal, ks, specularPower);
             }
 
             float ambientOcclusion(float3 intersection, float3 normal, float step_dist, float step_nbr)
@@ -314,7 +304,8 @@ Shader "Unlit/Raymarcher"
                     {
                         PrimitiveData closest = closestPrimitive(ray);
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
-                        float4 finalColor = phong(ray, normal, 0.25, 0.5, 0.5, 100, closest.color);
+                        float4 finalColor = closest.color;
+                        finalColor *= phong(ray, normal, 0.25, 0.5, 0.5, 100);
                         finalColor *= pow(ambientOcclusion(ray, normal, 0.015, 20), 40);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, depth / maxDist);
