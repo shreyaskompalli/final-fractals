@@ -8,7 +8,12 @@ public class Primitive : MonoBehaviour
 
     public enum PrimitiveType
     {
-        Sphere, Cube, Menger, Cross, Sierpinski, Mandelbulb
+        Sphere,
+        Cube,
+        Menger,
+        Cross,
+        Sierpinski,
+        Mandelbulb
     };
 
     public PrimitiveData Data()
@@ -23,19 +28,19 @@ public class Primitive : MonoBehaviour
             color = this.color
         };
     }
+}
 
-    public struct PrimitiveData
+public struct PrimitiveData
+{
+    public Vector3 position;
+    public Vector3 scale;
+    public int type;
+    public Color color;
+
+    public static int SizeOf()
     {
-        public Vector3 position;
-        public Vector3 scale;
-        public int type;
-        public Color color;
-
-        public static int SizeOf()
-        {
-            const int sizeofVector3 = sizeof(float) * 3;
-            const int sizeofColor = sizeof(float) * 4;
-            return 2 * sizeofVector3 + sizeofColor + sizeof(int);
-        }
+        const int sizeofVector3 = sizeof(float) * 3;
+        const int sizeofColor = sizeof(float) * 4;
+        return 2 * sizeofVector3 + sizeofColor + sizeof(int);
     }
 }

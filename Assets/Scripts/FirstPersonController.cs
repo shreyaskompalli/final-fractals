@@ -32,7 +32,5 @@ public class FirstPersonController : MonoBehaviour
         if (Input.GetKey(rightKey))
             velocity.x += speed;
         transform.position += transform.rotation * velocity;
-
-       
     }
 }

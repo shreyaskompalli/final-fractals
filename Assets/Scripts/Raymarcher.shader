@@ -18,6 +18,12 @@ Shader "Unlit/Raymarcher"
                 float4 color;
             };
 
+            struct LightData
+            {
+                float3 position;
+                float intensity;
+            };
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -42,10 +48,10 @@ Shader "Unlit/Raymarcher"
             float hFov;
             float vFov;
             StructuredBuffer<PrimitiveData> primitiveBuffer;
+            StructuredBuffer<LightData> lightBuffer;
             int numPrimitives;
+            int numLights;
             float4 backgroundColor;
-            float4 lightPos;
-            float lightIntensity;
 
             // =================================== UTILITIES ===================================
 
@@ -111,7 +117,7 @@ Shader "Unlit/Raymarcher"
                 float distance = boxSDF(p);
 
                 float crossScale = 1.0;
-                for (int i = 0; i < 11; i++)
+                for (int i = 0; i < 7; i++)
                 {
                     // p = rotatePoint(p, _SinTime, _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
@@ -255,7 +261,7 @@ Shader "Unlit/Raymarcher"
                     k.xxx * sceneSDF(p + k.xxx * EPSILON));
             }
 
-            float diffuse(float3 intersection, float3 normal, float kd)
+            float diffuse(float3 intersection, float3 normal, float3 lightPos, float lightIntensity, float kd)
             {
                 float r = distance(intersection, lightPos.xyz);
                 float3 n = normal;
@@ -263,7 +269,7 @@ Shader "Unlit/Raymarcher"
                 return kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
             }
 
-            float specular(float3 intersection, float3 normal, float ks, float power)
+            float specular(float3 intersection, float3 normal, float3 lightPos, float lightIntensity, float ks, float power)
             {
                 float r = distance(intersection, lightPos.xyz);
                 float3 v = normalize(_WorldSpaceCameraPos - intersection);
@@ -275,9 +281,17 @@ Shader "Unlit/Raymarcher"
 
             float phong(float3 intersection, float3 normal, float ka, float kd, float ks, float specularPower)
             {
-                return ka + diffuse(intersection, normal, kd) + specular(intersection, normal, ks, specularPower);
+                float output = ka;
+                for (int i = 0; i < numLights; i++)
+                {
+                    LightData light = lightBuffer[i];
+                    output += diffuse(intersection, normal, light.position, light.intensity, kd);
+                    output += specular(intersection, normal, light.position, light.intensity, ks, specularPower);
+                }
+                return output;
             }
 
+            // https://typhomnt.github.io/teaching/ray_tracing/raymarching_intro/#bonus-effect-ambient-occulsion-
             float ambientOcclusion(float3 intersection, float3 normal, float stepDist, float numSteps)
             {
                 float occlusion = 1.0f;
@@ -305,10 +319,10 @@ Shader "Unlit/Raymarcher"
                         PrimitiveData closest = closestPrimitive(ray);
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
-                        finalColor *= phong(ray, normal, 0.25, 0.5, 0.5, 100);
+                        finalColor *= phong(ray, normal, 0.25, 0.7, 0.5, 100);
                         finalColor *= pow(ambientOcclusion(ray, normal, 0.05, 5), 50);
                         // fog effect
-                        finalColor = lerp(finalColor, backgroundColor, depth / maxDist);
+                        finalColor = lerp(finalColor, backgroundColor, 0.9 * depth / maxDist);
                         return finalColor;
                     }
                     depth += dist;
