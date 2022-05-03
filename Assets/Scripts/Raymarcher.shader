@@ -151,13 +151,11 @@ Shader "Unlit/Raymarcher"
             // https://www.shadertoy.com/view/Ws23zt
             float tetrahedronSDF(float3 p)
             {
-                return (max(
-                    abs(p.x + p.y) - p.z,
-                    abs(p.x - p.y) + p.z
-                ) - 1.0) / sqrt(3.);
+                return (max(abs(p.x + p.y) - p.z, abs(p.x - p.y) + p.z) - 1.0) / sqrt(3.0);
             }
 
             // Signed distance to Sierpinski tetrahedron at specified level
+            // https://www.shadertoy.com/view/wsVBz1
             float sdSierpinski(float3 p, int iterations)
             {
                 // vertices of a tetrahedron
@@ -195,32 +193,14 @@ Shader "Unlit/Raymarcher"
                 return tetrahedronSDF(p) / scale;
             }
 
-            // http://blog.hvidtfeldts.net/index.php/2011/08/distance-estimated-3d-fractals-iii-folding-space/
-            float sierpinskiSDF(float3 p)
-            {
-                float scale = 2.0;
-                float offset = 3.0;
-
-                int i = 0;
-                while (i < 15)
-                {
-                    if (p.x + p.y < 0.0) p.xy = -p.yx; // fold 1
-                    if (p.x + p.z < 0.0) p.xz = -p.zx; // fold 2
-                    if (p.y + p.z < 0.0) p.zy = -p.yz; // fold 3
-                    p = p * scale - offset * (scale - 1.0);
-                    i++;
-                }
-                return length(p) * pow(scale, -float(i));
-            }
-
             // http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
-            float mandelbulbSDF(float3 p)
+            float mandelbulbSDF(float3 p, int iterations)
             {
                 float3 z = p;
                 float dr = 1.0;
                 float r = 0.0;
 
-                for (int i = 0; i < 15; i++)
+                for (int i = 0; i < iterations; i++)
                 {
                     float sinTime = sin(_Time / 8);
                     float power = 10 * abs(sinTime);
@@ -266,13 +246,10 @@ Shader "Unlit/Raymarcher"
                     primSDF = mengerSDF(translated, 5);
                     break;
                 case 3:
-                    primSDF = crossSDF(translated);
+                    primSDF = sdSierpinski(translated, 7);
                     break;
                 case 4:
-                    primSDF = sdSierpinski(translated, 5);
-                    break;
-                case 5:
-                    primSDF = mandelbulbSDF(translated);
+                    primSDF = mandelbulbSDF(translated, 5);
                     break;
                 default:
                     primSDF = maxDist / prim.scale;

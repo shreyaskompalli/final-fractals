@@ -11,7 +11,6 @@ public class Primitive : MonoBehaviour
         Sphere,
         Cube,
         Menger,
-        Cross,
         Sierpinski,
         Mandelbulb
     };
