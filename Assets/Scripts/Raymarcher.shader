@@ -88,6 +88,19 @@ Shader "Unlit/Raymarcher"
                 return homogenous.xyz;
             }
 
+            // Fold a point across a plane defined by a point and a normal
+            // The normal should face the side to be reflected
+            float3 fold(float3 p, float3 pointOnPlane, float3 planeNormal)
+            {
+                // Center plane on origin for distance calculation
+                float distToPlane = dot(p - pointOnPlane, planeNormal);
+
+                // We only want to reflect if the dist is negative
+                distToPlane = min(distToPlane, 0.0);
+                // https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
+                return p - 2.0 * distToPlane * planeNormal;
+            }
+
             // =================================== SDFs =========================================
 
             float sphereSDF(float3 p)
@@ -112,12 +125,12 @@ Shader "Unlit/Raymarcher"
 
             // https://lucodivo.github.io/menger_sponge.html for explanation
             // https://iquilezles.org/articles/menger/ for optimized SDF
-            float mengerSDF(float3 p)
+            float mengerSDF(float3 p, int iterations)
             {
                 float distance = boxSDF(p);
 
                 float crossScale = 1.0;
-                for (int i = 0; i < 7; i++)
+                for (int i = 0; i < iterations; i++)
                 {
                     // p = rotatePoint(p, _SinTime, _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
@@ -132,6 +145,54 @@ Shader "Unlit/Raymarcher"
                     distance = max(distance, crossDist);
                 }
                 return distance;
+            }
+
+            // Signed distance to a tetrahedron within canonical cube
+            // https://www.shadertoy.com/view/Ws23zt
+            float tetrahedronSDF(float3 p)
+            {
+                return (max(
+                    abs(p.x + p.y) - p.z,
+                    abs(p.x - p.y) + p.z
+                ) - 1.0) / sqrt(3.);
+            }
+
+            // Signed distance to Sierpinski tetrahedron at specified level
+            float sdSierpinski(float3 p, int iterations)
+            {
+                // vertices of a tetrahedron
+                const float3 vertices[4] =
+                {
+                    float3(1.0, 1.0, 1.0),
+                    float3(-1.0, 1.0, -1.0),
+                    float3(-1.0, -1.0, 1.0),
+                    float3(1.0, -1.0, -1.0)
+                };
+                
+                float scale = 1.0;
+                for (int i = 0; i < iterations; i++)
+                {
+                    // Scale p toward corner vertex, update scale accumulator
+                    p -= vertices[0];
+                    p *= 2.0;
+                    p += vertices[0];
+
+                    scale *= 2.0;
+
+                    // Fold p across each plane
+                    for (int j = 1; j <= 3; j++)
+                    {
+                        // The plane is defined by:
+                        // Point on plane: The vertex that we are reflecting across
+                        // Plane normal: The direction from said vertex to the corner vertex
+                        float3 normal = normalize(vertices[0] - vertices[j]);
+                        p = fold(p, vertices[j], normal);
+                    }
+                }
+                // Now that the space has been distorted by the IFS,
+                // just return the distance to a tetrahedron
+                // Divide by scale accumulator to correct the distance field
+                return tetrahedronSDF(p) / scale;
             }
 
             // http://blog.hvidtfeldts.net/index.php/2011/08/distance-estimated-3d-fractals-iii-folding-space/
@@ -163,7 +224,7 @@ Shader "Unlit/Raymarcher"
                 {
                     float sinTime = sin(_Time / 8);
                     float power = 10 * abs(sinTime);
-                    p = rotatePoint(p, sinTime, sinTime, 0);
+                    // p = rotatePoint(p, sinTime, sinTime, 0);
                     r = length(z);
 
                     if (r > 2)
@@ -202,13 +263,13 @@ Shader "Unlit/Raymarcher"
                     primSDF = boxSDF(translated);
                     break;
                 case 2:
-                    primSDF = mengerSDF(translated);
+                    primSDF = mengerSDF(translated, 5);
                     break;
                 case 3:
                     primSDF = crossSDF(translated);
                     break;
                 case 4:
-                    primSDF = sierpinskiSDF(translated);
+                    primSDF = sdSierpinski(translated, 5);
                     break;
                 case 5:
                     primSDF = mandelbulbSDF(translated);
@@ -269,7 +330,8 @@ Shader "Unlit/Raymarcher"
                 return kd * (lightIntensity / (r * r)) * max(0, dot(n, l));
             }
 
-            float specular(float3 intersection, float3 normal, float3 lightPos, float lightIntensity, float ks, float power)
+            float specular(float3 intersection, float3 normal, float3 lightPos, float lightIntensity, float ks,
+                           float power)
             {
                 float r = distance(intersection, lightPos.xyz);
                 float3 v = normalize(_WorldSpaceCameraPos - intersection);
