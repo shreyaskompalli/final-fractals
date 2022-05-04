@@ -154,7 +154,7 @@ Shader "Unlit/Raymarcher"
                 float crossScale = 1.0;
                 for (int i = 0; i < iterations; i++)
                 {
-                    // p = rotatePoint(p, _SinTime, _CosTime, 0);
+                    p = rotatePoint(p, _SinTime, _CosTime, 0);
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
@@ -219,8 +219,8 @@ Shader "Unlit/Raymarcher"
 
                 for (int i = 0; i < iterations; i++)
                 {
-                    float sinTime = sin(_Time / 8);
-                    float power = 8 + sinTime;
+                    float sinTime = sin(_Time[1] / 5);
+                    float power = 10 + 8 * sinTime;
                     // p = rotatePoint(p, sinTime, sinTime, 0);
                     r = length(z);
 
@@ -373,7 +373,7 @@ Shader "Unlit/Raymarcher"
             }
 
             // https://iquilezles.org/articles/rmshadows/
-            float softShadow(float3 rayOrigin, float k)
+            float softShadow(float3 rayOrigin, float k, float ka)
             {
                 float totalShadow = 0;
                 float shadowOffset = 10 * EPSILON;
@@ -389,7 +389,7 @@ Shader "Unlit/Raymarcher"
                         float dist = sceneSDF(rayOrigin + depth * dir);
                         if (dist < EPSILON)
                         {
-                            res = 0;
+                            res = ka;
                             break;
                         }
                         res = min(res, k * dist / depth);
@@ -428,7 +428,7 @@ Shader "Unlit/Raymarcher"
                         float3 phongParams = closest.phongParams;
                         finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
-                        // finalColor *= softShadow(ray, 1);
+                        finalColor *= softShadow(ray, 1, phongParams[0]);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / MAX_DIST);
                         return finalColor;
