@@ -237,6 +237,7 @@ Shader "Unlit/Raymarcher"
                 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/#uniform-scaling
                 float3 translated = (samplePoint - prim.position) / prim.scale;
                 float rayLength = length(samplePoint - _WorldSpaceCameraPos);
+                int iterations;
                 switch (prim.type)
                 {
                 // see Primitive.PrimitiveType enum for int to type mapping
@@ -247,10 +248,15 @@ Shader "Unlit/Raymarcher"
                     primSDF = boxSDF(translated);
                     break;
                 case 2:
-                    primSDF = mengerSDF(translated, 12 / lerp(1.5, 4, rayLength / MAX_DIST));
+                    // TODO: find better way get # iterations
+                    // # of iterations should decrease with ray length
+                    // # of iterations should increase with scale
+                    iterations = (prim.scale * 3 - 3) / lerp(1.5, 4, rayLength / MAX_DIST);
+                    primSDF = mengerSDF(translated, iterations);
                     break;
                 case 3:
-                    primSDF = sierpinskiSDF(translated, 15 / lerp(1.5, 3, rayLength / MAX_DIST));
+                    iterations = prim.scale * 3 / lerp(1.5, 4, rayLength / MAX_DIST);
+                    primSDF = sierpinskiSDF(translated, iterations);
                     break;
                 case 4:
                     primSDF = mandelbulbSDF(translated, 4);
