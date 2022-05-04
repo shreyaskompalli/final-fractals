@@ -110,11 +110,13 @@ Shader "Unlit/Raymarcher"
                 // https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
                 return p - 2.0 * distToPlane * planeNormal;
             }
+
             // =================================== COLORING =====================================
 
+            // https://www.shadertoy.com/view/4lK3Dc
             float mengerTrap(float3 p)
             {
-                return abs(p.x + p.y);
+                return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
 
             // =================================== SDFs =========================================
@@ -163,7 +165,7 @@ Shader "Unlit/Raymarcher"
                     float dc = max(r.z, r.x);
                     float crossDist = (min(da, min(db, dc)) - 1.0) / crossScale;
 
-                    orbitTrap = min(orbitTrap, mengerTrap(a));
+                    orbitTrap = min(orbitTrap, mengerTrap(r));
                     distance = max(distance, crossDist);
                 }
                 return distance;
@@ -253,7 +255,7 @@ Shader "Unlit/Raymarcher"
                 float rayLength = length(samplePoint - _WorldSpaceCameraPos);
                 int iterations;
                 Intersection output;
-                
+
                 switch (prim.type)
                 {
                 // see Primitive.PrimitiveType enum for int to type mapping
@@ -270,7 +272,6 @@ Shader "Unlit/Raymarcher"
                     iterations = 12 / lerp(1.5, 4, rayLength / MAX_DIST);
                     iterations = clamp(iterations, prim.iterations.x, prim.iterations.y);
                     primSDF = mengerSDF(translated, iterations, output.orbitTrap);
-                    // setDebugOutput(output.orbitTrap);
                     break;
                 case 3:
                     iterations = 15 / lerp(1.5, 4, rayLength / MAX_DIST);
@@ -284,7 +285,7 @@ Shader "Unlit/Raymarcher"
                     primSDF = MAX_DIST / prim.scale;
                     break;
                 }
-                
+
                 output.distance = primSDF * prim.scale;
                 output.primitive = prim;
                 return output;
@@ -296,7 +297,7 @@ Shader "Unlit/Raymarcher"
                 Intersection mintersect;
                 mintersect.distance = MAX_DIST;
                 mintersect.primitive.color = backgroundColor;
-                
+
                 for (int i = 0; i < numPrimitives; ++i)
                 {
                     PrimitiveData prim = primitiveBuffer[i];
@@ -409,21 +410,21 @@ Shader "Unlit/Raymarcher"
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
-                    
+
                     if (dist < EPSILON)
                     {
                         Intersection isect = sceneIntersection(ray);
                         PrimitiveData closest = isect.primitive;
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
-                        
+
                         if (closest.usesOrbitTrap != 0)
                         {
                             float ot = isect.orbitTrap;
                             // arbitrary; play around with this
-                            finalColor = float4(ot / 1.1, ot * ot / 0.8, ot * ot * ot / 0.9, 1);
+                            finalColor = float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
                         }
-                        
+
                         float3 phongParams = closest.phongParams;
                         finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
