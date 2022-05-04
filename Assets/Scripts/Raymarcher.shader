@@ -117,7 +117,7 @@ Shader "Unlit/Raymarcher"
 
             float boxSDF(float3 p)
             {
-                return length(max(abs(p)-1.0,0.0));
+                return length(max(abs(p) - 1.0, 0.0));
             }
 
             // source: https://www.shadertoy.com/view/WtfXzj
@@ -345,13 +345,40 @@ Shader "Unlit/Raymarcher"
                 return pow(occlusion, power);
             }
 
+            // https://iquilezles.org/articles/rmshadows/
+            float softShadow(float3 rayOrigin, float k)
+            {
+                float totalShadow = 0;
+                float shadowOffset = 10 * EPSILON;
+                for (int i = 0; i < numLights; i++)
+                {
+                    float res = 1;
+                    float depth = shadowOffset;
+                    LightData light = lightBuffer[i];
+                    float3 dir = normalize(light.position - rayOrigin);
+                    for (int j = 0; j < MAX_STEPS && depth < light.intensity; j++)
+                    {
+                        float dist = sceneSDF(rayOrigin + depth * dir);
+                        if (dist < EPSILON)
+                        {
+                            res = 0;
+                            break;
+                        }
+                        res = min(res, k * dist / depth);
+                        depth += dist;
+                    }
+                    totalShadow += res;
+                }
+                return totalShadow;
+            }
+
             // =================================== RAY MARCHING ================================
 
             // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/#the-raymarching-algorithm
-            float4 rayMarch(int maxSteps, float3 dir)
+            float4 rayMarch(float3 dir)
             {
                 float depth = 0;
-                for (int j = 0; j < maxSteps && depth < MAX_DIST; j++)
+                for (int j = 0; j < MAX_STEPS && depth < MAX_DIST; j++)
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
@@ -362,8 +389,9 @@ Shader "Unlit/Raymarcher"
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
                         float3 phongParams = closest.phongParams;
-                        finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
+                        // finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
+                        finalColor *= softShadow(ray, 1);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / MAX_DIST);
                         return finalColor;
@@ -399,7 +427,7 @@ Shader "Unlit/Raymarcher"
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
                 float2 screenUV = i.scrPos.xy / i.scrPos.w; // in range [0, 1]
                 float3 dir = generateRayDir(screenUV);
-                float4 output = rayMarch(MAX_STEPS, dir);
+                float4 output = rayMarch(dir);
                 return debug == 1 ? debugOutputColor : output;
             }
             ENDCG
