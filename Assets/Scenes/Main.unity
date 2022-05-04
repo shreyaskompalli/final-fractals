@@ -322,7 +322,6 @@ GameObject:
   - component: {fileID: 889255465}
   - component: {fileID: 889255464}
   - component: {fileID: 889255463}
-  - component: {fileID: 889255462}
   - component: {fileID: 889255461}
   m_Layer: 0
   m_Name: Menger
@@ -345,19 +344,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 2
   color: {r: 0.735849, g: 0.52722746, b: 0.12148449, a: 0}
---- !u!65 &889255462
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 889255460}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  phong: {x: 0.25, y: 0.7, z: 0.1}
 --- !u!23 &889255463
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -552,7 +539,6 @@ GameObject:
   - component: {fileID: 1624788744}
   - component: {fileID: 1624788743}
   - component: {fileID: 1624788742}
-  - component: {fileID: 1624788741}
   - component: {fileID: 1624788740}
   m_Layer: 0
   m_Name: Sphere
@@ -575,19 +561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 0
   color: {r: 0.8584906, g: 0.10852615, b: 0.10852615, a: 0}
---- !u!135 &1624788741
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1624788739}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  phong: {x: 0.2, y: 1, z: 1}
 --- !u!23 &1624788742
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -665,7 +639,6 @@ GameObject:
   - component: {fileID: 1638481804}
   - component: {fileID: 1638481803}
   - component: {fileID: 1638481802}
-  - component: {fileID: 1638481801}
   - component: {fileID: 1638481800}
   m_Layer: 0
   m_Name: Cube
@@ -688,19 +661,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 1
   color: {r: 0.24390338, g: 0.102794565, b: 0.7075472, a: 0}
---- !u!65 &1638481801
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1638481799}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  phong: {x: 0.2, y: 1, z: 1}
 --- !u!23 &1638481802
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -778,7 +739,6 @@ GameObject:
   - component: {fileID: 1843743761}
   - component: {fileID: 1843743760}
   - component: {fileID: 1843743759}
-  - component: {fileID: 1843743758}
   - component: {fileID: 1843743762}
   m_Layer: 0
   m_Name: Sierpinski
@@ -787,19 +747,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!65 &1843743758
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843743757}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1843743759
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -880,6 +827,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 3
   color: {r: 0.07700242, g: 0.9716981, b: 0.10708241, a: 0}
+  phong: {x: 0.2, y: 0.7, z: 0}
 --- !u!1 &1957312141
 GameObject:
   m_ObjectHideFlags: 0

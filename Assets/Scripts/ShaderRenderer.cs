@@ -14,8 +14,6 @@ public class ShaderRenderer : MonoBehaviour
 
     private bool initialized;
     
-    private static readonly int HFov = Shader.PropertyToID("hFov");
-    private static readonly int VFov = Shader.PropertyToID("vFov");
     private static readonly int PrimitiveBuffer = Shader.PropertyToID("primitiveBuffer");
     private static readonly int NumPrimitives = Shader.PropertyToID("numPrimitives");
     private static readonly int BackgroundColor = Shader.PropertyToID("backgroundColor");
@@ -26,16 +24,11 @@ public class ShaderRenderer : MonoBehaviour
     {
         if (!initialized) Init();
         
-        var vFov = cam.fieldOfView;
-        var hFov = Camera.VerticalToHorizontalFieldOfView(vFov, cam.aspect);
-
         var primitiveBuffer = new ComputeBuffer(primitives.Length, PrimitiveData.SizeOf());
         primitiveBuffer.SetData(primitives.Select(x => x.Data()).ToArray());
         var lightBuffer = new ComputeBuffer(lights.Length, LightData.SizeOf());
         lightBuffer.SetData(lights.Select(x => x.Data()).ToArray());
         
-        mat.SetFloat(HFov, hFov);
-        mat.SetFloat(VFov, vFov);
         mat.SetVector(BackgroundColor, cam.backgroundColor);
         mat.SetBuffer(PrimitiveBuffer, primitiveBuffer);
         mat.SetBuffer(LightBuffer, lightBuffer);
@@ -45,7 +38,6 @@ public class ShaderRenderer : MonoBehaviour
         Graphics.Blit(src, dest, mat);
         primitiveBuffer.Release();
         lightBuffer.Release();
-        
     }
 
     private void Init()

@@ -16,6 +16,7 @@ Shader "Unlit/Raymarcher"
                 float3 scale;
                 int type;
                 float4 color;
+                float3 phongParams;
             };
 
             struct LightData
@@ -42,11 +43,9 @@ Shader "Unlit/Raymarcher"
             // ray marcher parameters
             static const float EPSILON = 0.0003f;
             static const float maxDist = 25.0f;
-            static const int maxSteps = 99;
+            static const int maxSteps = 99; // some arbitrarily large value; there's no float.INFINITY
 
             // Material properties passed in from C#
-            float hFov;
-            float vFov;
             StructuredBuffer<PrimitiveData> primitiveBuffer;
             StructuredBuffer<LightData> lightBuffer;
             int numPrimitives;
@@ -123,6 +122,12 @@ Shader "Unlit/Raymarcher"
                 return min(d.x, min(d.y, d.z)) - 1.0;
             }
 
+            // https://www.shadertoy.com/view/Ws23zt
+            float tetrahedronSDF(float3 p)
+            {
+                return (max(abs(p.x + p.y) - p.z, abs(p.x - p.y) + p.z) - 1.0) / sqrt(3.0);
+            }
+
             // https://lucodivo.github.io/menger_sponge.html for explanation
             // https://iquilezles.org/articles/menger/ for optimized SDF
             float mengerSDF(float3 p, int iterations)
@@ -147,16 +152,8 @@ Shader "Unlit/Raymarcher"
                 return distance;
             }
 
-            // Signed distance to a tetrahedron within canonical cube
-            // https://www.shadertoy.com/view/Ws23zt
-            float tetrahedronSDF(float3 p)
-            {
-                return (max(abs(p.x + p.y) - p.z, abs(p.x - p.y) + p.z) - 1.0) / sqrt(3.0);
-            }
-
-            // Signed distance to Sierpinski tetrahedron at specified level
             // https://www.shadertoy.com/view/wsVBz1
-            float sdSierpinski(float3 p, int iterations)
+            float sierpinskiSDF(float3 p, int iterations)
             {
                 // vertices of a tetrahedron
                 const float3 vertices[4] =
@@ -166,7 +163,7 @@ Shader "Unlit/Raymarcher"
                     float3(-1.0, -1.0, 1.0),
                     float3(1.0, -1.0, -1.0)
                 };
-                
+
                 float scale = 1.0;
                 for (int i = 0; i < iterations; i++)
                 {
@@ -203,7 +200,7 @@ Shader "Unlit/Raymarcher"
                 for (int i = 0; i < iterations; i++)
                 {
                     float sinTime = sin(_Time / 8);
-                    float power = 10 * abs(sinTime);
+                    float power = 8 + sinTime;
                     // p = rotatePoint(p, sinTime, sinTime, 0);
                     r = length(z);
 
@@ -247,10 +244,10 @@ Shader "Unlit/Raymarcher"
                     primSDF = mengerSDF(translated, 12 / lerp(1.5, 4, rayLength / maxDist));
                     break;
                 case 3:
-                    primSDF = sdSierpinski(translated, 12 / lerp(1.5, 4, rayLength / maxDist));
+                    primSDF = sierpinskiSDF(translated, 12 / lerp(1.5, 3, rayLength / maxDist));
                     break;
                 case 4:
-                    primSDF = mandelbulbSDF(translated, 5);
+                    primSDF = mandelbulbSDF(translated, 4);
                     break;
                 default:
                     primSDF = maxDist / prim.scale;
@@ -273,7 +270,7 @@ Shader "Unlit/Raymarcher"
 
             PrimitiveData closestPrimitive(float3 samplePoint)
             {
-                float minSDF = maxDist; // some arbitrarily large value; there's no float.INFINITY
+                float minSDF = maxDist;
                 PrimitiveData closest;
                 for (int i = 0; i < numPrimitives; ++i)
                 {
@@ -359,10 +356,11 @@ Shader "Unlit/Raymarcher"
                         PrimitiveData closest = closestPrimitive(ray);
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
-                        finalColor *= phong(ray, normal, 0.25, 0.7, 0.5, 100);
+                        float3 phongParams = closest.phongParams;
+                        finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= pow(ambientOcclusion(ray, normal, 0.05, 5), 50);
                         // fog effect
-                        finalColor = lerp(finalColor, backgroundColor, 0.9 * depth / maxDist);
+                        finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / maxDist);
                         return finalColor;
                     }
                     depth += dist;
@@ -376,29 +374,10 @@ Shader "Unlit/Raymarcher"
              */
             float3 generateRayDir(float2 coords)
             {
-                // proj 3-1 code courtesy of linda
-                // float2 fov = float2(hFov, vFov);
-                // float2 fovRad = fov * UNITY_PI / 180;
-                // float2 camPos = tan(0.5 * fovRad) * (2 * coords - 1);
-                // float3 dir = normalize(mul(unity_CameraToWorld, float4(camPos, 1.0f, 1.0f)).xyz);
-
-                // sebastian lague
-                // float4 dirImage = float4(coords, 0, 1);
-                // float4 dirCamera = mul(unity_CameraInvProjection, dirImage);
-                // float4 dirWorld = mul(unity_CameraToWorld, dirCamera);
-                // float3 dir = normalize(dirWorld.xyz);
-
-                // jamie wong
-                // float2 xy = _ScreenParams.xy * (coords - 1 / 2);
-                // float z = (_ScreenParams.y / 2) / tan(radians(vFov) / 2);
-                // float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, z)));
-
                 float2 xy = 2 * coords - 1.5; // screen coordinates in [-1.5, 0.5] range
                 // why do we subtract by 1.5 and not 1.0? i came up with 1.5 by pure guesswork
                 xy.x *= _ScreenParams.x / _ScreenParams.y; // scale by aspect ratio
                 float3 dir = normalize(mul(unity_CameraToWorld, float3(xy, 1)));
-
-                // setDebugOutput(float4(dir.xyz, 1));
                 return dir;
             }
 

@@ -5,6 +5,8 @@ public class Primitive : MonoBehaviour
 {
     public PrimitiveType type;
     public Color color;
+    // X = ka, Y = kd, Z = ks (parameters for phong shading)
+    public Vector3 phong;
 
     public enum PrimitiveType
     {
@@ -24,7 +26,8 @@ public class Primitive : MonoBehaviour
             position = myTransform.position,
             scale = myTransform.localScale,
             type = typeOrdinal,
-            color = this.color
+            color = this.color,
+            phongParams = phong
         };
     }
 }
@@ -35,11 +38,12 @@ public struct PrimitiveData
     public Vector3 scale;
     public int type;
     public Color color;
+    public Vector3 phongParams; // x = ka, y = kd, z = ks
 
     public static int SizeOf()
     {
         const int sizeofVector3 = sizeof(float) * 3;
         const int sizeofColor = sizeof(float) * 4;
-        return 2 * sizeofVector3 + sizeofColor + sizeof(int);
+        return 3 * sizeofVector3 + sizeofColor + sizeof(int);
     }
 }
