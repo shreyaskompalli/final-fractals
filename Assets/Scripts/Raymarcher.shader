@@ -19,6 +19,7 @@ Shader "Unlit/Raymarcher"
                 float3 phongParams; // x = ka, y = kd, z = ks
                 // only for fractals
                 float2 iterations; // x = min iterations, y = max iterations
+                float usesOrbitTrap; // 0 for solid color, anything else for orbit trap
             };
 
             struct LightData
@@ -113,7 +114,7 @@ Shader "Unlit/Raymarcher"
 
             float mengerTrap(float3 p)
             {
-                return length(p);
+                return abs(p.x + p.y);
             }
 
             // =================================== SDFs =========================================
@@ -162,6 +163,7 @@ Shader "Unlit/Raymarcher"
                     float dc = max(r.z, r.x);
                     float crossDist = (min(da, min(db, dc)) - 1.0) / crossScale;
 
+                    orbitTrap = min(orbitTrap, mengerTrap(a));
                     distance = max(distance, crossDist);
                 }
                 return distance;
@@ -206,11 +208,12 @@ Shader "Unlit/Raymarcher"
             }
 
             // http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
-            float mandelbulbSDF(float3 p, int iterations)
+            float mandelbulbSDF(float3 p, int iterations, out float orbitTrap)
             {
                 float3 z = p;
                 float dr = 1.0;
                 float r = 0.0;
+                orbitTrap = MAX_DIST;
 
                 for (int i = 0; i < iterations; i++)
                 {
@@ -235,6 +238,8 @@ Shader "Unlit/Raymarcher"
                     // convert back to cartesian coordinates
                     z = zr * float3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
                     z += p;
+
+                    orbitTrap = min(orbitTrap, mengerTrap(z));
                 }
                 return 0.5 * log(r) * r / dr;
             }
@@ -248,6 +253,7 @@ Shader "Unlit/Raymarcher"
                 float rayLength = length(samplePoint - _WorldSpaceCameraPos);
                 int iterations;
                 Intersection output;
+                
                 switch (prim.type)
                 {
                 // see Primitive.PrimitiveType enum for int to type mapping
@@ -272,12 +278,13 @@ Shader "Unlit/Raymarcher"
                     primSDF = sierpinskiSDF(translated, iterations);
                     break;
                 case 4:
-                    primSDF = mandelbulbSDF(translated, 4);
+                    primSDF = mandelbulbSDF(translated, 4, output.orbitTrap);
                     break;
                 default:
                     primSDF = MAX_DIST / prim.scale;
                     break;
                 }
+                
                 output.distance = primSDF * prim.scale;
                 output.primitive = prim;
                 return output;
@@ -289,6 +296,7 @@ Shader "Unlit/Raymarcher"
                 Intersection mintersect;
                 mintersect.distance = MAX_DIST;
                 mintersect.primitive.color = backgroundColor;
+                
                 for (int i = 0; i < numPrimitives; ++i)
                 {
                     PrimitiveData prim = primitiveBuffer[i];
@@ -401,12 +409,21 @@ Shader "Unlit/Raymarcher"
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
+                    
                     if (dist < EPSILON)
                     {
                         Intersection isect = sceneIntersection(ray);
                         PrimitiveData closest = isect.primitive;
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
+                        
+                        if (closest.usesOrbitTrap != 0)
+                        {
+                            float ot = isect.orbitTrap;
+                            // arbitrary; play around with this
+                            finalColor = float4(ot / 1.1, ot * ot / 0.8, ot * ot * ot / 0.9, 1);
+                        }
+                        
                         float3 phongParams = closest.phongParams;
                         finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
