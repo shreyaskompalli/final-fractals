@@ -16,7 +16,9 @@ Shader "Unlit/Raymarcher"
                 float3 scale;
                 int type;
                 float4 color;
-                float3 phongParams;
+                float3 phongParams; // x = ka, y = kd, z = ks
+                // only for fractals
+                float2 iterations; // x = min iterations, y = max iterations
             };
 
             struct LightData
@@ -30,7 +32,7 @@ Shader "Unlit/Raymarcher"
             {
                 float distance;
                 PrimitiveData primitive;
-                float3 orbitTrap;
+                float orbitTrap;
             };
 
             struct appdata
@@ -107,6 +109,12 @@ Shader "Unlit/Raymarcher"
                 // https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
                 return p - 2.0 * distToPlane * planeNormal;
             }
+            // =================================== COLORING =====================================
+
+            float mengerTrap(float3 p)
+            {
+                return length(p);
+            }
 
             // =================================== SDFs =========================================
 
@@ -136,10 +144,10 @@ Shader "Unlit/Raymarcher"
 
             // https://lucodivo.github.io/menger_sponge.html for explanation
             // https://iquilezles.org/articles/menger/ for optimized SDF
-            float mengerSDF(float3 p, int iterations)
+            float mengerSDF(float3 p, int iterations, out float orbitTrap)
             {
                 float distance = boxSDF(p);
-
+                orbitTrap = MAX_DIST;
                 float crossScale = 1.0;
                 for (int i = 0; i < iterations; i++)
                 {
@@ -147,6 +155,7 @@ Shader "Unlit/Raymarcher"
                     float3 a = modvec(p * crossScale, 2.0) - 1.0;
                     crossScale *= 3.0;
                     float3 r = abs(1.0 - 3.0 * abs(a));
+                    orbitTrap = min(orbitTrap, mengerTrap(r));
 
                     float da = max(r.x, r.y);
                     float db = max(r.y, r.z);
@@ -238,6 +247,7 @@ Shader "Unlit/Raymarcher"
                 float3 translated = (samplePoint - prim.position) / prim.scale;
                 float rayLength = length(samplePoint - _WorldSpaceCameraPos);
                 int iterations;
+                Intersection output;
                 switch (prim.type)
                 {
                 // see Primitive.PrimitiveType enum for int to type mapping
@@ -251,11 +261,14 @@ Shader "Unlit/Raymarcher"
                     // TODO: find better way get # iterations
                     // # of iterations should decrease with ray length
                     // # of iterations should increase with scale
-                    iterations = (prim.scale * 3 - 3) / lerp(1.5, 4, rayLength / MAX_DIST);
-                    primSDF = mengerSDF(translated, iterations);
+                    iterations = 12 / lerp(1.5, 4, rayLength / MAX_DIST);
+                    iterations = clamp(iterations, prim.iterations.x, prim.iterations.y);
+                    primSDF = mengerSDF(translated, iterations, output.orbitTrap);
+                    // setDebugOutput(output.orbitTrap);
                     break;
                 case 3:
-                    iterations = prim.scale * 3 / lerp(1.5, 4, rayLength / MAX_DIST);
+                    iterations = 15 / lerp(1.5, 4, rayLength / MAX_DIST);
+                    iterations = clamp(iterations, prim.iterations.x, prim.iterations.y);
                     primSDF = sierpinskiSDF(translated, iterations);
                     break;
                 case 4:
@@ -265,7 +278,6 @@ Shader "Unlit/Raymarcher"
                     primSDF = MAX_DIST / prim.scale;
                     break;
                 }
-                Intersection output;
                 output.distance = primSDF * prim.scale;
                 output.primitive = prim;
                 return output;

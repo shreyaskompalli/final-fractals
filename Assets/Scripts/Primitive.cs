@@ -4,9 +4,14 @@ using UnityEngine;
 public class Primitive : MonoBehaviour
 {
     [SerializeField] private PrimitiveType type;
+
     [SerializeField] private Color color;
+
     // X = ka, Y = kd, Z = ks (parameters for phong shading)
     [SerializeField] private Vector3 phong;
+
+    // x = minIterations, y = maxIterations
+    [SerializeField] private Vector2 iterations;
 
     public enum PrimitiveType
     {
@@ -27,7 +32,8 @@ public class Primitive : MonoBehaviour
             scale = myTransform.localScale,
             type = typeOrdinal,
             color = this.color,
-            phongParams = phong
+            phongParams = phong,
+            iterations = this.iterations
         };
     }
 }
@@ -39,11 +45,13 @@ public struct PrimitiveData
     public int type;
     public Color color;
     public Vector3 phongParams; // x = ka, y = kd, z = ks
+    public Vector2 iterations;
 
     public static int SizeOf()
     {
         const int sizeofVector3 = sizeof(float) * 3;
         const int sizeofColor = sizeof(float) * 4;
-        return 3 * sizeofVector3 + sizeofColor + sizeof(int);
+        const int sizeofVector2 = sizeof(float) * 2;
+        return 3 * sizeofVector3 + sizeofColor + sizeofVector2 + sizeof(int);
     }
 }
