@@ -25,6 +25,15 @@ Shader "Unlit/Raymarcher"
                 float intensity;
             };
 
+            // SDFs should return more than just the distance, as some data is needed for lighting calcs
+            struct Intersection
+            {
+                float distance;
+                PrimitiveData primitive;
+                float3 normal;
+                float3 orbitTrap;
+            };
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -42,8 +51,8 @@ Shader "Unlit/Raymarcher"
 
             // ray marcher parameters
             static const float EPSILON = 0.0003f;
-            static const float maxDist = 25.0f;
-            static const int maxSteps = 99; // some arbitrarily large value; there's no float.INFINITY
+            static const float MAX_DIST = 25.0f;
+            static const int MAX_STEPS = 99; // some arbitrarily large value; there's no float.INFINITY
 
             // Material properties passed in from C#
             StructuredBuffer<PrimitiveData> primitiveBuffer;
@@ -109,9 +118,7 @@ Shader "Unlit/Raymarcher"
 
             float boxSDF(float3 p)
             {
-                // return length(max(abs(p)-b,0.0));
-                float3 q = abs(p) - 1.0;
-                return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+                return length(max(abs(p)-1.0,0.0));
             }
 
             // source: https://www.shadertoy.com/view/WtfXzj
@@ -225,7 +232,7 @@ Shader "Unlit/Raymarcher"
             }
 
             // calls corresponding SDF function based on primitive type of PRIM
-            float primitiveSDF(PrimitiveData prim, float3 samplePoint)
+            Intersection primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
                 float primSDF;
                 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/#uniform-scaling
@@ -241,48 +248,45 @@ Shader "Unlit/Raymarcher"
                     primSDF = boxSDF(translated);
                     break;
                 case 2:
-                    primSDF = mengerSDF(translated, 12 / lerp(1.5, 4, rayLength / maxDist));
+                    primSDF = mengerSDF(translated, 12 / lerp(1.5, 4, rayLength / MAX_DIST));
                     break;
                 case 3:
-                    primSDF = sierpinskiSDF(translated, 12 / lerp(1.5, 3, rayLength / maxDist));
+                    primSDF = sierpinskiSDF(translated, 15 / lerp(1.5, 3, rayLength / MAX_DIST));
                     break;
                 case 4:
                     primSDF = mandelbulbSDF(translated, 4);
                     break;
                 default:
-                    primSDF = maxDist / prim.scale;
+                    primSDF = MAX_DIST / prim.scale;
                     break;
                 }
-                return primSDF * prim.scale;
+                Intersection output;
+                output.distance = primSDF * prim.scale;
+                output.primitive = prim;
+                return output;
             }
 
             // takes min over SDF of all primitives in scene
-            float sceneSDF(float3 samplePoint)
+            Intersection sceneIntersection(float3 samplePoint)
             {
-                float minSDF = maxDist; // some arbitrarily large value; there's no float.INFINITY
+                Intersection mintersect;
+                mintersect.distance = MAX_DIST;
+                mintersect.primitive.color = backgroundColor;
                 for (int i = 0; i < numPrimitives; ++i)
                 {
                     PrimitiveData prim = primitiveBuffer[i];
-                    minSDF = min(minSDF, primitiveSDF(prim, samplePoint));
-                }
-                return minSDF;
-            }
-
-            PrimitiveData closestPrimitive(float3 samplePoint)
-            {
-                float minSDF = maxDist;
-                PrimitiveData closest;
-                for (int i = 0; i < numPrimitives; ++i)
-                {
-                    PrimitiveData prim = primitiveBuffer[i];
-                    float primSDF = primitiveSDF(prim, samplePoint);
-                    if (primSDF < minSDF)
+                    Intersection isect = primitiveSDF(prim, samplePoint);
+                    if (isect.distance < mintersect.distance)
                     {
-                        minSDF = primSDF;
-                        closest = prim;
+                        mintersect = isect;
                     }
                 }
-                return closest;
+                return mintersect;
+            }
+
+            float sceneSDF(float3 samplePoint)
+            {
+                return sceneIntersection(samplePoint).distance;
             }
 
             // =================================== LIGHTING =====================================
@@ -347,20 +351,20 @@ Shader "Unlit/Raymarcher"
             float4 rayMarch(int maxSteps, float3 dir)
             {
                 float depth = 0;
-                for (int j = 0; j < maxSteps && depth < maxDist; j++)
+                for (int j = 0; j < maxSteps && depth < MAX_DIST; j++)
                 {
                     float3 ray = _WorldSpaceCameraPos + depth * dir;
                     float dist = sceneSDF(ray);
                     if (dist < EPSILON)
                     {
-                        PrimitiveData closest = closestPrimitive(ray);
+                        PrimitiveData closest = sceneIntersection(ray).primitive;
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
                         float3 phongParams = closest.phongParams;
                         finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= pow(ambientOcclusion(ray, normal, 0.05, 5), 50);
                         // fog effect
-                        finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / maxDist);
+                        finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / MAX_DIST);
                         return finalColor;
                     }
                     depth += dist;
@@ -394,7 +398,7 @@ Shader "Unlit/Raymarcher"
                 // https://forum.unity.com/threads/what-does-the-function-computescreenpos-in-unitycg-cginc-do.294470/ 
                 float2 screenUV = i.scrPos.xy / i.scrPos.w; // in range [0, 1]
                 float3 dir = generateRayDir(screenUV);
-                float4 output = rayMarch(maxSteps, dir);
+                float4 output = rayMarch(MAX_STEPS, dir);
                 return debug == 1 ? debugOutputColor : output;
             }
             ENDCG

@@ -251,6 +251,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 4
   color: {r: 0.6981132, g: 0.2463154, b: 0.2463154, a: 0}
+  phong: {x: 0.2, y: 0.7, z: 0.1}
 --- !u!65 &1585058982
 BoxCollider:
   m_ObjectHideFlags: 0

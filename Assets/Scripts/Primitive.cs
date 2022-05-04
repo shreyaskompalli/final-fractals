@@ -21,7 +21,7 @@ public class Primitive : MonoBehaviour
     {
         var myTransform = transform;
         var typeOrdinal = Array.IndexOf(Enum.GetValues(type.GetType()), type);
-        return new PrimitiveData()
+        return new PrimitiveData
         {
             position = myTransform.position,
             scale = myTransform.localScale,
