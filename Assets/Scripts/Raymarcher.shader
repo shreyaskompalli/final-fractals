@@ -354,9 +354,10 @@ Shader "Unlit/Raymarcher"
                 {
                     float res = 1;
                     float depth = shadowOffset;
+                    int maxShadowSteps = 10;
                     LightData light = lightBuffer[i];
                     float3 dir = normalize(light.position - rayOrigin);
-                    for (int j = 0; j < MAX_STEPS && depth < light.intensity; j++)
+                    for (int j = 0; j < maxShadowSteps && depth < light.intensity; j++)
                     {
                         float dist = sceneSDF(rayOrigin + depth * dir);
                         if (dist < EPSILON)
@@ -389,9 +390,9 @@ Shader "Unlit/Raymarcher"
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
                         float3 phongParams = closest.phongParams;
-                        // finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
+                        finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
                         finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
-                        finalColor *= softShadow(ray, 1);
+                        // finalColor *= softShadow(ray, 1);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / MAX_DIST);
                         return finalColor;
