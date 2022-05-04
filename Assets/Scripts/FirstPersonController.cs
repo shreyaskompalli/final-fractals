@@ -19,9 +19,6 @@ public class FirstPersonController : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
-        transform.eulerAngles += mouseSensitivity * cursorDelta;
-
         var velocity = new Vector3();
         if (Input.GetKey(forwardKey))
             velocity.z += speed;
@@ -32,5 +29,9 @@ public class FirstPersonController : MonoBehaviour
         if (Input.GetKey(rightKey))
             velocity.x += speed;
         transform.position += transform.rotation * velocity;
+        
+        // TODO: Bug where looking straight up or down flips controls
+        var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
+        transform.eulerAngles += mouseSensitivity * cursorDelta;
     }
 }

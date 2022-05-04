@@ -30,7 +30,6 @@ Shader "Unlit/Raymarcher"
             {
                 float distance;
                 PrimitiveData primitive;
-                float3 normal;
                 float3 orbitTrap;
             };
 
@@ -320,6 +319,7 @@ Shader "Unlit/Raymarcher"
                 return ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power);
             }
 
+            // https://cs184.eecs.berkeley.edu/sp22/lecture/6-31/rasterization-pipeline
             float phong(float3 intersection, float3 normal, float ka, float kd, float ks, float specularPower)
             {
                 float output = ka;
@@ -333,7 +333,7 @@ Shader "Unlit/Raymarcher"
             }
 
             // https://typhomnt.github.io/teaching/ray_tracing/raymarching_intro/#bonus-effect-ambient-occulsion-
-            float ambientOcclusion(float3 intersection, float3 normal, float stepDist, float numSteps)
+            float ambientOcclusion(float3 intersection, float3 normal, float stepDist, float numSteps, float power)
             {
                 float occlusion = 1.0f;
                 while (numSteps > 0.0)
@@ -342,12 +342,12 @@ Shader "Unlit/Raymarcher"
                                      sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps;
                     numSteps--;
                 }
-                return occlusion;
+                return pow(occlusion, power);
             }
 
             // =================================== RAY MARCHING ================================
 
-            // sample code from jamie wong article
+            // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/#the-raymarching-algorithm
             float4 rayMarch(int maxSteps, float3 dir)
             {
                 float depth = 0;
@@ -357,12 +357,13 @@ Shader "Unlit/Raymarcher"
                     float dist = sceneSDF(ray);
                     if (dist < EPSILON)
                     {
-                        PrimitiveData closest = sceneIntersection(ray).primitive;
+                        Intersection isect = sceneIntersection(ray);
+                        PrimitiveData closest = isect.primitive;
                         float3 normal = calcNormal(ray); // value is cached to reduce recomputation
                         float4 finalColor = closest.color;
                         float3 phongParams = closest.phongParams;
                         finalColor *= phong(ray, normal, phongParams[0], phongParams[1], phongParams[2], 100);
-                        finalColor *= pow(ambientOcclusion(ray, normal, 0.05, 5), 50);
+                        finalColor *= ambientOcclusion(ray, normal, 0.05, 5, 50);
                         // fog effect
                         finalColor = lerp(finalColor, backgroundColor, 1.0 * depth / MAX_DIST);
                         return finalColor;
