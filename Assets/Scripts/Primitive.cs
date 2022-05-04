@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class Primitive : MonoBehaviour
 {
-    public PrimitiveType type;
-    public Color color;
+    [SerializeField] private PrimitiveType type;
+    [SerializeField] private Color color;
     // X = ka, Y = kd, Z = ks (parameters for phong shading)
-    public Vector3 phong;
+    [SerializeField] private Vector3 phong;
 
     public enum PrimitiveType
     {
