@@ -22,7 +22,8 @@ public class Primitive : MonoBehaviour
         Menger,
         Sierpinski,
         Mandelbulb,
-        Julia
+        Julia,
+        Custom0
     };
 
     public PrimitiveData Data()

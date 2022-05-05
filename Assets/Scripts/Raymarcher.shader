@@ -144,6 +144,64 @@ Shader "Unlit/Raymarcher"
                 return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
 
+            float juliaTrap(float4 p)
+            {
+                return length(p);
+            }
+
+            float custom0Trap(float3 p)
+            {
+                return length(p);
+            }
+
+            // The following Orbit Trap Color functions take in the trapped value (returned in Intersection.orbitTrap)
+            // and return a color based on applying a function to that value
+            float4 mengerOrbitTrapColor(float ot)
+            {
+                return float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
+            }
+
+            float4 sierpinskiOrbitTrapColor(float ot)
+            {
+                return float4(1, 0, 1, 1);
+            }
+            
+            float4 mandelbulbOrbitTrapColor(float ot)
+            {
+                return float4(1, 0, 1, 1);
+            }
+            
+            float4 juliaOrbitTrapColor(float ot)
+            {
+                return float4(1, 0, 1, 1);
+            }
+
+            float4 custom0OrbitTrapColor(float ot)
+            {
+                return float4(1, 0, 1, 1);
+            }
+
+            // TODO: is there a better way to write one coloring function per fractal than a big switch block like this?
+            // There are no lambdas in HLSL
+            float4 orbitTrapColor(float ot, int primType)
+            {
+                switch(primType)
+                {
+                case 2:
+                    return mengerOrbitTrapColor(ot);
+                case 3:
+                    return sierpinskiOrbitTrapColor(ot);
+                case 4:
+                    return mandelbulbOrbitTrapColor(ot);
+                case 5:
+                    return juliaOrbitTrapColor(ot);
+                case 6:
+                    return custom0OrbitTrapColor(ot);
+                default:
+                    return float4(1, 0, 1, 1);
+                }
+            }
+
             // =================================== SDFs =========================================
 
             float sphereSDF(float3 p)
@@ -292,7 +350,7 @@ Shader "Unlit/Raymarcher"
                     m2 = quaternionLength2(z);
 
                     // orbit trapping : https://iquilezles.org/articles/orbittraps3d
-                    orbitTrap = min(orbitTrap, length(z.xz - float2(0.45, 0.55)) - 0.1);
+                    orbitTrap = min(orbitTrap, juliaTrap(z));
 
                     // exit condition
                     if (m2 > 256.0) break;
@@ -303,10 +361,16 @@ Shader "Unlit/Raymarcher"
                 float d = 0.25 * log(m2) * sqrt(m2 / dz2);
 
                 // next two lines are optional
-                d = min(orbitTrap, d);
+                // d = min(orbitTrap, d);
                 d = max(d, p.y);
 
                 return d;
+            }
+
+            float custom0SDF(float3 p, int intersections, out float orbitTrap)
+            {
+                orbitTrap = 0;
+                return length(p);
             }
 
             // calls corresponding SDF function based on primitive type of PRIM
@@ -346,6 +410,9 @@ Shader "Unlit/Raymarcher"
                     break;
                 case 5:
                     primSDF = juliaSDF(translated, 100, output.orbitTrap);
+                    break;
+                case 6:
+                    primSDF = custom0SDF(translated, 5, output.orbitTrap);
                     break;
                 default:
                     primSDF = MAX_DIST / prim.scale;
@@ -492,7 +559,7 @@ Shader "Unlit/Raymarcher"
                         {
                             float ot = isect.orbitTrap;
                             // arbitrary; play around with this
-                            finalColor = float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
+                            finalColor = orbitTrapColor(ot, isect.primitive.type);
                         }
 
                         float3 phongParams = closest.phongParams;
