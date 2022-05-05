@@ -146,7 +146,7 @@ Shader "Unlit/Raymarcher"
 
             float juliaTrap(float4 p)
             {
-                return length(p);
+                return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
 
             float custom0Trap(float3 p)
@@ -163,17 +163,18 @@ Shader "Unlit/Raymarcher"
 
             float4 sierpinskiOrbitTrapColor(float ot)
             {
-                return float4(1, 0, 1, 1);
+                return float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
             }
             
             float4 mandelbulbOrbitTrapColor(float ot)
             {
-                return float4(1, 0, 1, 1);
+                return float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
             }
             
             float4 juliaOrbitTrapColor(float ot)
             {
-                return float4(1, 0, 1, 1);
+                ot *= 7;
+                return float4(ot % 2, ot % 3, ot % 5, 1);
             }
 
             float4 custom0OrbitTrapColor(float ot)
@@ -332,7 +333,7 @@ Shader "Unlit/Raymarcher"
             float juliaSDF(float3 p, int iterations, out float orbitTrap)
             {
                 float4 z = float4(p, 0.0);
-                const float4 kC = float4(-2, 6, 15, -6) / 22.0;
+                float4 kC = float4(-2, 6, 15, -6) / 22.0;
                 float dz2 = 1.0;
                 float m2 = 0.0;
                 float n = 0.0;
@@ -409,7 +410,7 @@ Shader "Unlit/Raymarcher"
                     primSDF = mandelbulbSDF(translated, 4, output.orbitTrap);
                     break;
                 case 5:
-                    primSDF = juliaSDF(translated, 100, output.orbitTrap);
+                    primSDF = juliaSDF(translated, 50, output.orbitTrap);
                     break;
                 case 6:
                     primSDF = custom0SDF(translated, 5, output.orbitTrap);
