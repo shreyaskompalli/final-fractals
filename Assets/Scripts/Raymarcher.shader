@@ -116,7 +116,16 @@ Shader "Unlit/Raymarcher"
             // https://www.shadertoy.com/view/4lK3Dc
             float mengerTrap(float3 p)
             {
-                p *= 2;
+                return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
+            }
+
+            float sierpinskiTrap(float3 p)
+            {
+                return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
+            }
+            
+            float mandelbulbTrap(float3 p)
+            {
                 return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
 
@@ -167,35 +176,12 @@ Shader "Unlit/Raymarcher"
                 }
 
                 return dist;
-
-                // https://iquilezles.org/articles/menger/ for optimized SDF
-                /*
-                float distance = boxSDF(p);
-                orbitTrap = MAX_DIST;
-                float crossScale = 1.0;
-                for (int i = 0; i < iterations; i++)
-                {
-                    p = rotatePoint(p, _SinTime, _CosTime, 0);
-                    float3 a = modvec(p * crossScale, 2.0) - 1.0;
-                    crossScale *= 3.0;
-                    float3 r = abs(1.0 - 3.0 * abs(a));
-                    orbitTrap = min(orbitTrap, mengerTrap(r));
-
-                    float da = max(r.x, r.y);
-                    float db = max(r.y, r.z);
-                    float dc = max(r.z, r.x);
-                    float crossDist = (min(da, min(db, dc)) - 1.0) / crossScale;
-
-                    orbitTrap = min(orbitTrap, mengerTrap(r));
-                    distance = max(distance, crossDist);
-                }
-                return distance;
-                */
             }
 
             // https://www.shadertoy.com/view/wsVBz1
-            float sierpinskiSDF(float3 p, int iterations)
+            float sierpinskiSDF(float3 p, int iterations, out float orbitTrap)
             {
+                orbitTrap = 0;
                 // vertices of a tetrahedron
                 const float3 vertices[4] =
                 {
@@ -222,6 +208,7 @@ Shader "Unlit/Raymarcher"
                         // Point on plane: The vertex that we are reflecting across
                         // Plane normal: The direction from said vertex to the corner vertex
                         float3 normal = normalize(vertices[0] - vertices[j]);
+                        orbitTrap = min(orbitTrap, p);
                         p = fold(p, vertices[j], normal);
                     }
                 }
@@ -298,7 +285,7 @@ Shader "Unlit/Raymarcher"
                 case 3:
                     iterations = 15 / lerp(1.5, 4, rayLength / MAX_DIST);
                     iterations = clamp(iterations, prim.iterations.x, prim.iterations.y);
-                    primSDF = sierpinskiSDF(translated, iterations);
+                    primSDF = sierpinskiSDF(translated, iterations, output.orbitTrap);
                     break;
                 case 4:
                     primSDF = mandelbulbSDF(translated, 4, output.orbitTrap);
