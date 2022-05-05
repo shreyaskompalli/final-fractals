@@ -116,6 +116,7 @@ Shader "Unlit/Raymarcher"
             // https://www.shadertoy.com/view/4lK3Dc
             float mengerTrap(float3 p)
             {
+                p *= 2;
                 return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
 
@@ -145,10 +146,30 @@ Shader "Unlit/Raymarcher"
                 return (max(abs(p.x + p.y) - p.z, abs(p.x - p.y) + p.z) - 1.0) / sqrt(3.0);
             }
 
-            // https://lucodivo.github.io/menger_sponge.html for explanation
-            // https://iquilezles.org/articles/menger/ for optimized SDF
+            // https://lucodivo.github.io/menger_sponge.html 
             float mengerSDF(float3 p, int iterations, out float orbitTrap)
             {
+                float dist = boxSDF(p);
+                orbitTrap = MAX_DIST;
+
+                float scale = 1.0;
+                for (int i = 0; i < iterations; ++i)
+                {
+                    float boxedWidth = 2 / scale;
+                    float3 modRay = modvec(p + boxedWidth / 2.0, boxedWidth);
+                    orbitTrap = min(orbitTrap, mengerTrap(p));
+                    modRay -= boxedWidth / 2.0;
+                    modRay *= scale;
+                    float crossDist = crossSDF(modRay * 3.0);
+                    scale *= 3.0;
+                    crossDist /= scale;
+                    dist = max(dist, -crossDist);
+                }
+
+                return dist;
+
+                // https://iquilezles.org/articles/menger/ for optimized SDF
+                /*
                 float distance = boxSDF(p);
                 orbitTrap = MAX_DIST;
                 float crossScale = 1.0;
@@ -169,6 +190,7 @@ Shader "Unlit/Raymarcher"
                     distance = max(distance, crossDist);
                 }
                 return distance;
+                */
             }
 
             // https://www.shadertoy.com/view/wsVBz1
