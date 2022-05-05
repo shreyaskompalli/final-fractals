@@ -111,6 +111,21 @@ Shader "Unlit/Raymarcher"
                 return p - 2.0 * distToPlane * planeNormal;
             }
 
+            // WTF is a quaternion?
+            float4 quaternionSquare(float4 q)
+            {
+                return float4(q.x * q.x - q.y * q.y - q.z * q.z - q.w * q.w, 2.0 * q.x * q.yzw);
+            }
+
+            float4 quaternionCube(float4 q)
+            {
+                float4 q2 = q * q;
+                return float4(q.x * (q2.x - 3.0 * q2.y - 3.0 * q2.z - 3.0 * q2.w),
+                              q.yzw * (3.0 * q2.x - q2.y - q2.z - q2.w));
+            }
+
+            float quaternionLength2(float4 q) { return dot(q, q); }
+
             // =================================== COLORING =====================================
 
             // https://www.shadertoy.com/view/4lK3Dc
@@ -123,7 +138,7 @@ Shader "Unlit/Raymarcher"
             {
                 return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
             }
-            
+
             float mandelbulbTrap(float3 p)
             {
                 return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
@@ -255,6 +270,45 @@ Shader "Unlit/Raymarcher"
                 return 0.5 * log(r) * r / dr;
             }
 
+            // https://www.shadertoy.com/view/3tsyzl
+            float juliaSDF(float3 p, int iterations, out float orbitTrap)
+            {
+                float4 z = float4(p, 0.0);
+                const float4 kC = float4(-2, 6, 15, -6) / 22.0;
+                float dz2 = 1.0;
+                float m2 = 0.0;
+                float n = 0.0;
+                orbitTrap = MAX_DIST;
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    // z' = 3z² -> |z'|² = 9|z²|²
+                    dz2 *= 9.0 * quaternionLength2(quaternionSquare(z));
+
+                    // z = z³ + c		
+                    z = quaternionCube(z) + kC;
+
+                    // stop under divergence		
+                    m2 = quaternionLength2(z);
+
+                    // orbit trapping : https://iquilezles.org/articles/orbittraps3d
+                    orbitTrap = min(orbitTrap, length(z.xz - float2(0.45, 0.55)) - 0.1);
+
+                    // exit condition
+                    if (m2 > 256.0) break;
+                    n += 1.0;
+                }
+
+                // sdf(z) = log|z|·|z|/|dz| : https://iquilezles.org/articles/distancefractals
+                float d = 0.25 * log(m2) * sqrt(m2 / dz2);
+
+                // next two lines are optional
+                d = min(orbitTrap, d);
+                d = max(d, p.y);
+
+                return d;
+            }
+
             // calls corresponding SDF function based on primitive type of PRIM
             Intersection primitiveSDF(PrimitiveData prim, float3 samplePoint)
             {
@@ -289,6 +343,9 @@ Shader "Unlit/Raymarcher"
                     break;
                 case 4:
                     primSDF = mandelbulbSDF(translated, 4, output.orbitTrap);
+                    break;
+                case 5:
+                    primSDF = juliaSDF(translated, 100, output.orbitTrap);
                     break;
                 default:
                     primSDF = MAX_DIST / prim.scale;

@@ -21,7 +21,8 @@ public class Primitive : MonoBehaviour
         Cube,
         Menger,
         Sierpinski,
-        Mandelbulb
+        Mandelbulb,
+        Julia
     };
 
     public PrimitiveData Data()
