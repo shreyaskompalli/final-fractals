@@ -136,7 +136,7 @@ Shader "Unlit/Raymarcher"
 
             float sierpinskiTrap(float3 p)
             {
-                return abs(sin(p.x) - p.y) + abs(sin(p.y) - p.z) + abs(sin(p.z) - p.x);
+                return length(p);
             }
 
             float mandelbulbTrap(float3 p)
@@ -163,7 +163,7 @@ Shader "Unlit/Raymarcher"
 
             float4 sierpinskiOrbitTrapColor(float ot)
             {
-                return float4(ot / 2.5, (sin(ot) + 1) / 3.5, (cos(ot) + 1) / 5, 1);
+                return float4(ot, ot, ot, 1);
             }
             
             float4 mandelbulbOrbitTrapColor(float ot)

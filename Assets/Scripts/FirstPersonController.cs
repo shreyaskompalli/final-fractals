@@ -21,14 +21,15 @@ public class FirstPersonController : MonoBehaviour
     {
         var velocity = new Vector3();
         if (Input.GetKey(forwardKey))
-            velocity.z += speed;
+            velocity.z += 1;
         if (Input.GetKey(downKey))
-            velocity.z -= speed;
+            velocity.z -= 1;
         if (Input.GetKey(leftKey))
-            velocity.x -= speed;
+            velocity.x -= 1;
         if (Input.GetKey(rightKey))
-            velocity.x += speed;
-        transform.position += transform.rotation * velocity * Time.deltaTime;
+            velocity.x += 1;
+        velocity = Vector3.Normalize(velocity);
+        transform.position += transform.rotation * velocity * (speed * Time.deltaTime);
         
         // TODO: Bug where looking straight up or down flips controls
         var cursorDelta = new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
