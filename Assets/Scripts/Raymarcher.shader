@@ -377,6 +377,7 @@ Shader "Unlit/Raymarcher"
             {
                 float totalShadow = 0;
                 float shadowOffset = 10 * EPSILON;
+                float ph = EPSILON;
                 for (int i = 0; i < numLights; i++)
                 {
                     float res = 1;
@@ -392,12 +393,15 @@ Shader "Unlit/Raymarcher"
                             res = ka;
                             break;
                         }
-                        res = min(res, k * dist / depth);
+                        float y = dist * dist / (2 * ph);
+                        float d = sqrt(dist * dist - y * y);
+                        res = min(res, k * d / max(0, depth - y));
+                        ph = dist;
                         depth += dist;
                     }
                     totalShadow += res;
                 }
-                return totalShadow;
+                return clamp(totalShadow, 0, 1);
             }
 
             // =================================== RAY MARCHING ================================
