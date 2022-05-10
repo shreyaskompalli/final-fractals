@@ -342,7 +342,7 @@ Shader "Unlit/Raymarcher"
                 for (int i = 0; i < iterations; i++)
                 {
                     // z' = 3z² -> |z'|² = 9|z²|²
-                    dz2 *= 9.0 * quaternionLength2(quaternionSquare(z));
+                    dz2 *= 10.0 * quaternionLength2(quaternionSquare(z));
 
                     // z = z³ + c		
                     z = quaternionCube(z) + kC;
