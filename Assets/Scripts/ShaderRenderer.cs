@@ -34,7 +34,7 @@ public class ShaderRenderer : MonoBehaviour
         mat.SetBuffer(LightBuffer, lightBuffer);
         mat.SetInteger(NumPrimitives, primitives.Length);
         mat.SetInteger(NumLights, lights.Length);
-        
+
         Graphics.Blit(src, dest, mat);
         primitiveBuffer.Release();
         lightBuffer.Release();

@@ -6,6 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Menu.unity
+    guid: 22ee9e0cf78f32748b89703648075459
+  - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/Giant Menger.unity
+    guid: c7141794f2615954e9c5f2182dc43aa8
+  - enabled: 1
+    path: Assets/Scenes/Julia.unity
+    guid: 5f13da4af5b7fca45b0c818118cc3137
+  - enabled: 1
+    path: Assets/Scenes/Mandelbulb.unity
+    guid: eeed03f3d944b204cb2ec8214f13bc89
   m_configObjects: {}

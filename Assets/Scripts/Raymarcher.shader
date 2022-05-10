@@ -516,7 +516,7 @@ Shader "Unlit/Raymarcher"
                 {
                     float res = 1;
                     float depth = shadowOffset;
-                    int maxShadowSteps = 10;
+                    int maxShadowSteps = 3;
                     LightData light = lightBuffer[i];
                     float3 dir = normalize(light.position - rayOrigin);
                     for (int j = 0; j < maxShadowSteps && depth < light.intensity; j++)
