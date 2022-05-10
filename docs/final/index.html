@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Final Project: Fractal Factory</h1>
+<h2 align="middle">Kyle Zhang, Shreyas Kompalli, Aram Kazorian, Linda Deng</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Abstract</h2>
+<p>
+The high-level goal of this project was to write a system capable of rendering fractals (never-ending 
+patterns based on mathematical equations) in real time. Our team found these types of complex patterns 
+to be very visually appealing and mesmerizing to look at; furthermore, we wanted to explore real-time 
+rendering, where we could continually generate a scene as we move the camera around. We decided to use 
+Unity since it provided a nice starting point for real-time rendering, as this is the type of rendering 
+that is done in most video games. Using the ray marching algorithm, signed distance functions (SDFs), 
+shaders, and various visual effects (both lighting and coloring), we were able to create a graphics 
+system that can render any fractal pattern given its SDF. The final product allows you to configure the 
+desired SDF in the code, begin the render, and then interact with the scene by moving the camera around 
+to view the beautiful and hypnotizing fractal from any angle or distance.
+</p>
+
+<center><iframe src="https://drive.google.com/file/d/1KYXR1mfAr5VcB9heqH2isXD5jvPuQkql/preview" width="640" height="480" allow="autoplay"></iframe></center>
+
+<h2 align="middle">Technical Approach</h2>
+
+<h3>
+Signed Distance Functions (SDFs)
+</h3>
+
+<p>
+    The ray marcher does not use traditional ray-primitive intersection functions like a ray tracer does, so we need to use 
+    Signed Distance Functions (SDFs) to tell our ray marcher whether a ray intersects with a primitive. All fractals we 
+    rendered in the scene are defined by SDFs. SDFs function similarly to implicit geometry, as they return the closest 
+    distance from a ray to the surface of an object. We can leverage the fact that fractals have known SDFs to render very 
+    detailed geometries for relatively little computational cost, as each ray will only have to do one call to the SDF per 
+    step of the ray march instead of potentially millions of triangle intersection tests in a ray tracer. SDFs are great for 
+    our tasks because they have many interesting properties that we can leverage to easily create highly complex geometries. 
+    We can union, intersection, and subtract different shapes to create more complex ones. We can also infinitely repeat shapes 
+    using modulo and reflect shapes across different planes. One example of use union and subtraction to create new objects can
+     be shown in the following picture.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/SDF_union.png" width="500px" />
+            <figcaption align="middle">Example of Properties of SDFs</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<h3>
+Ray Marcher
+</h3>
+
+<p>
+Since fractals are quite complex shapes, we decided to use the ray marcher algorithm instead of the ray tracing algorithm we 
+learned in class. To do that, we self-learned how to implement the ray marcher algorithm and used it to render a sphere and a 
+cube. The big idea of ray marcher is that every object is defined using a signed distance function. So, instead of intersecting 
+with shapes multiple times, at every step, we find the closest point from the current position to the object, and then advance 
+that much distance in the direction of the ray until we are close to the object. We check whether we are close to the object by 
+calculating whether the distance is small or not.
+</p>
+
+
+<p>website link: </p>
+
+</body>
+</html>
