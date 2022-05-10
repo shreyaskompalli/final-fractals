@@ -31,7 +31,7 @@
 
 <div>
 
-<h2 align="middle">Abstract</h2>
+<h2>Abstract</h2>
 <p>
 The high-level goal of this project was to write a system capable of rendering fractals (never-ending 
 patterns based on mathematical equations) in real time. Our team found these types of complex patterns 
@@ -47,7 +47,7 @@ to view the beautiful and hypnotizing fractal from any angle or distance.
 
 <center><iframe src="https://drive.google.com/file/d/1KYXR1mfAr5VcB9heqH2isXD5jvPuQkql/preview" width="640" height="480" allow="autoplay"></iframe></center>
 
-<h2 align="middle">Technical Approach</h2>
+<h2>Technical Approach</h2>
 
 <h3>
 Signed Distance Functions (SDFs)
@@ -89,8 +89,295 @@ that much distance in the direction of the ray until we are close to the object.
 calculating whether the distance is small or not.
 </p>
 
+<h3>
+Visual Effects
+</h3>
 
-<p>website link: </p>
+<h4>
+Fog
+</h4>
+
+<p>
+Since rays were only marched for a set maximum distance to improve performance, the scene cut off in an abrupt way once the 
+camera moved far away enough from the primitives.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/fog-bug.png" width="600px" />
+            <figcaption align="middle">Scene cut off example</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<p>
+To fix this, we implemented a fog effect by linearly interpolating between the color of the primitives with the background 
+color with the distance traveled by the ray as our interpolation parameter.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/fog.png" width="600px" />
+            <figcaption align="middle">Fog effect example</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<h4>
+Orbit trapping
+</h4>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/julia-set.png" width="600px" />
+            <figcaption align="middle">Julia set, solid color</figcaption>
+        </tr>
+        <tr>
+            <td align="middle">
+            <img src="images/julia-set-orbit-trapping.png" width="600px" />
+            <figcaption align="middle">Julia set with orbit trapping</figcaption>
+        </tr>
+    </table>
+  </div>
+
+  <p>
+    Orbit trapping is a method of coloring fractals. Fractal SDFs are usually constructed by iteratively applying some 
+    function repeatedly to some shape or point. Orbit trapping works by keeping track of the minimum distance between this 
+    point and some arbitrary function. This minimum distance is then used to compute the color. This “traps” the point in a 
+    shape defined by the function, which gives rise to interesting patterns based on the shape of the function. How you choose 
+    the arbitrary function and how you choose to use the distance to color the final result is up to artistic preference.
+  </p>
+
+<h4>
+Phong Shading
+</h4>
+
+<p>
+For computing the Phong shading model, we found the value of the ambient, diffuse, and specular lighting, and added them 
+together to get the output. We then use these in the phong shading function by iterating through the lights in the scene, and 
+calculating the diffuse and specular shading for each light, and adding it to output, which starts as ka (ambient light). We 
+compute diffuse and specular shading using the two formulas from class as well, given from the lectures. Namely, diffuse 
+lighting is calculated by using `kd * (lightIntensity / (r * r)) * max(0, dot(n, l))` and specular lighting is calculated by 
+using `ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power)`. The Phong shading value is used as a scalar for the 
+sfinal color (i.e. finalColor *= phongValue). An example of phong shading in action is seen below. 
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/menger-phong.png" width="600px" />
+            <figcaption align="middle">A menger sponge with only phong shading</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<h4>
+Ambient Occlusion
+</h4>
+
+<p>
+We scaled the final color by the value we get from the Ambient Occlusion calculation, similar to the Phong shading. 
+When calculating the Ambient Occlusion, we iterate over some constant number of steps (5 in our case) along a ray normal to 
+the intersection point. For each step, we compute `pow(numSteps * stepDist - sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps`. 
+At the end we raise the occlusion factor to the power we passed into the function. Intuitively, this formula is computing 
+the sceneSDF and checking if rays in the normal direction are occluded by other primitives. We then subtract this amount from 
+the occlusion factor, which starts at 1.0.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/ambient-menger.png" width="600px" />
+            <figcaption align="middle">A menger sponge with ambient occlusion but no shadows</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<h4>
+Shadows
+</h4>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/menger-ambient-shadows.png" width="600px" />
+            <figcaption align="middle">A menger sponge with ambient occlusion and shadows turned on</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<p>
+    Adding shadows in ray marching is similar to adding shadows in ray tracing. We fire rays from the intersection point of the 
+    camera rays and the primitives in the scene towards the light in the scene, and step along the ray, checking for intersections 
+    along the way. If the ray from the intersection point to the light intersects with an object, it must be occluded, so we 
+    apply a shadow to that point.
+</p>
+
+<h4>
+Animation
+</h4>
+
+<p>
+We have access to the `_Time` variable in Unity, which represents the time passed since the scene started. On every iteration 
+in the SDF, we found the time we wanted to use for the animation by taking  the sine function of time to have a value for time 
+that oscillates smoothly. We then decided on a power of the animation that we were going to apply to the rotations of the 
+vertices. We did this by assigning power to `10 + 8 * sinTime`. We then continued to use this power value we found and applied 
+it to the vertices when converting to polar coordinates, and when scaling and rotating the coordinates. We then used the angles 
+found for polar coordinates using the power to convert back to Cartesian coordinates. 
+</p>
+
+<center><iframe src="https://drive.google.com/file/d/1SXmY_TcueIRnltv9eueqFs-QpsudStyP/preview" width="640" height="480" allow="autoplay"></iframe></center>
+
+<br>
+<br>
+
+<h2>A description of problems encountered and how you tackled them</h2>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/bug-1.png" width="600px" />
+            <figcaption align="middle">First bug</figcaption>
+        </tr>
+    </table>
+  </div>
+
+<p>
+Our very first bug was that our raymarcher was rendering just a black screen. We suspected this was a bug in our function that 
+generates camera rays. Because shaders do not have access to a debugger or to print statements, we wrote some utility functions 
+that output the direction of each camera ray as a color to the screen. It turned out that our ray generation code from project 
+3-1 did not work because the convention in Unity is that the camera faces the positive z direction in camera space rather than 
+the negative z direction as is convention in OpenGL. By changing the sign of the ray’s z direction, we got this basic shape to 
+render.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/bug-2.png" width="600px" />
+            <figcaption align="middle">Second bug</figcaption>
+        </tr>
+    </table>
+  </div>
+
+  <p>
+    This is how the Menger sponge SDF looked upon first implementation. Only half of the Menger sponge was correctly rendering. 
+    After looking online for solutions, we discovered an article that pointed out how the modulo function in HLSL functions 
+    differently from the modulo function in some other shader languages. We replaced `x % y` in our definition with 
+    `x - y * floor(x / y)`, which fixed it. This differs from the default HLSL implementation of mod, `x - y * trunc(x / y)`, 
+    when the `x / y` term is negative.
+  </p>
+
+  <div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/bug-3.png" width="600px" />
+            <figcaption align="middle">Third bug</figcaption>
+        </tr>
+    </table>
+  </div>
+
+  <p>
+    A high number of iterations on our fractal looks good when up close (as seen on the right of the above image), 
+    but creates significant aliasing when viewed from afar. This is due to the high frequency of the geometry relative to the 
+    low sampling frequency of far away parts of the scene. To fix this, we adapted the idea of mipmapping which we covered in 
+    class: we lowered the number of fractal iterations for rays that intersect further away from the camera. This keeps the 
+    detail of the scene up close and reduces aliasing for parts far away.
+  </p>
+
+  <div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+            <img src="images/menger-mipmap.png" width="600px" />
+            <figcaption align="middle">The same menger sponge, with the mipmapping idea implemented.</figcaption>
+        </tr>
+    </table>
+  </div>
+
+  <h2>
+    A description of lessons learned
+  </h2>
+
+  <p>
+    Throughout the project, we encountered many examples of code online that used many mathematical tricks to render SDFs in 
+    very few lines of code. We learned that it was more important to use a readable, well commented implementation with 
+    reasonably named identifiers rather than trying to use the shortest working code snippet that we found online. We also 
+    learned that programming solely in a shader came with many quirks that made debugging much more difficult than writing 
+    CPU-side code, and we relied more on our programming intuition to debug than actually looking at the state of the program. 
+  </p>
+
+  <h2>
+    Results
+  </h2>
+
+  <p>
+    Your final images, animations, video of your system (whichever is relevant). You can include results that you think show 
+    off what you built but that you did not have time to go over on presentation day.
+  </p>
+
+  <p>
+    Run our demo on your computer! (Windows & macOS)
+  </p>
+
+  <a href="https://klyye.itch.io/fractals">https://klyye.itch.io/fractals</a>
+
+  <h2>
+      References
+  </h2>
+
+  <a href="http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions ">http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions </a>
+  <a href="https://typhomnt.github.io/teaching/ray_tracing/raymarching_intro">https://typhomnt.github.io/teaching/ray_tracing/raymarching_intro</a>
+  <a href="https://iquilezles.org/articles/ ">https://iquilezles.org/articles/ </a>
+  <a href="https://www.shadertoy.com/">https://www.shadertoy.com/</a>
+  <a href="https://lucodivo.github.io/menger_sponge.html">https://lucodivo.github.io/menger_sponge.html</a>
+  <a href="http://blog.hvidtfeldts.net/index.php/2011/06/distance-estimated-3d-fractals-part-i/">http://blog.hvidtfeldts.net/index.php/2011/06/distance-estimated-3d-fractals-part-i/</a>
+
+  <h2>
+    Contributions from each team member
+  </h2>
+
+  <h3>Linda Deng</h3>
+
+  <p>Worked on implementing the ray marcher, researching and writing the first couple of SDFs, and helping implement 
+      and debug some of the HLSL shader code. Helped brainstorm how to reduce the aliasing effects seen on menger sponge. 
+      Worked on writing and finalizing the slides and reports and editing the deliverables.
+    </p>
+
+  <h3>Shreyas Kompalli</h3>
+
+  <p>
+    Worked on implementing the ray marcher, understanding and writing basic SDFs, and writing some of the HLSL shader code. 
+    Note: I contracted COVID during RRR week, so I wasn’t able to contribute as much towards the advanced lighting/coloring 
+    effects that we implemented.
+  </p>
+
+  <h3>Kyle Zhang</h3>
+
+  <p>
+
+  </p>
+
+  <h3>Aram Kazorian</h3>
+
+  <p>
+    Worked on visual effects (lighting, rotation, and animation effects) MengerSDF and initial rendering of the first couple 
+    basic SDFs, and final video rendering. Also worked on understanding and implementing the ray marcher algorithm as well.
+  </p>
+
+<p>website link: https://shreyaskompalli.github.io/final-fractals/final</p>
 
 </body>
 </html>
