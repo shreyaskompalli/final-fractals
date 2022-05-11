@@ -39,9 +39,9 @@ to be very visually appealing and mesmerizing to look at; furthermore, we wanted
 rendering, where we could continually generate a scene as we move the camera around. We decided to use 
 Unity since it provided a nice starting point for real-time rendering, as this is the type of rendering 
 that is done in most video games. Using the ray marching algorithm, signed distance functions (SDFs), 
-shaders, and various visual effects (both lighting and coloring), we were able to create a graphics 
+    and various visual effects (both lighting and coloring), we were able to create a graphics 
 system that can render any fractal pattern given its SDF. The final product allows you to configure the 
-desired SDF in the code, begin the render, and then interact with the scene by moving the camera around 
+desired SDF in the code, and then interact with the scene by moving the camera around 
 to view the beautiful and hypnotizing fractal from any angle or distance.
 </p>
 
@@ -228,11 +228,9 @@ Animation
 
 <p>
 We have access to the <code>_Time</code> variable in Unity, which represents the time passed since the scene started. On every iteration 
-in the SDF, we found the time we wanted to use for the animation by taking  the sine function of time to have a value for time 
-that oscillates smoothly. We then decided on a power of the animation that we were going to apply to the rotations of the 
-vertices. We did this by assigning power to <code>10 + 8 * sinTime</code>. We then continued to use this power value we found and applied 
-it to the vertices when converting to polar coordinates, and when scaling and rotating the coordinates. We then used the angles 
-found for polar coordinates using the power to convert back to Cartesian coordinates. 
+in the SDF of these fractals, we took the sine of the current time to let our animation smoothly oscillate. We can add time as a parameter
+    to anything in the SDF, including scale, position, rotation, and even color. This allows use to create 3D fractals that smoothly shift
+    and turn over time. 
 </p>
 
 <center><iframe src="https://drive.google.com/file/d/1SXmY_TcueIRnltv9eueqFs-QpsudStyP/preview" width="640" height="480" allow="autoplay"></iframe></center>
@@ -327,7 +325,9 @@ render.
     Run our demo on your computer! (Windows & macOS)
   </p>
 
-  <a href="https://klyye.itch.io/fractals">https://klyye.itch.io/fractals</a>
+    <iframe width="552" height="167" frameborder="0" src="https://itch.io/embed/1524128">
+        <a href="https://klyye.itch.io/fractals">Download and run this project on your computer! (Windows & macOS)</a>
+    </iframe>
 
   <h2>
       References
