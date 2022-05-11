@@ -497,11 +497,10 @@ Shader "Unlit/Raymarcher"
             float ambientOcclusion(float3 intersection, float3 normal, float stepDist, float numSteps, float power)
             {
                 float occlusion = 1.0f;
-                while (numSteps > 0.0)
+                for (; numSteps > 0.0; numSteps--)
                 {
                     occlusion -= pow(numSteps * stepDist -
                                      sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps;
-                    numSteps--;
                 }
                 return pow(occlusion, power);
             }

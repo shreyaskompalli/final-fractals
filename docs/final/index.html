@@ -15,7 +15,7 @@
     font-family: 'Source Sans Pro', sans-serif;
   }
 </style>
-<title>CS 184 Mesh Editor</title>
+<title>CS 184 Final Project</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
 </head>
@@ -128,7 +128,7 @@ color with the distance traveled by the ray as our interpolation parameter.
   </div>
 
 <h4>
-Orbit trapping
+Orbit Trapping
 </h4>
 
 <div align="center">
@@ -163,8 +163,8 @@ For computing the Phong shading model, we found the value of the ambient, diffus
 together to get the output. We then use these in the phong shading function by iterating through the lights in the scene, and 
 calculating the diffuse and specular shading for each light, and adding it to output, which starts as ka (ambient light). We 
 compute diffuse and specular shading using the two formulas from class as well, given from the lectures. Namely, diffuse 
-lighting is calculated by using `kd * (lightIntensity / (r * r)) * max(0, dot(n, l))` and specular lighting is calculated by 
-using `ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power)`. The Phong shading value is used as a scalar for the 
+    lighting is calculated by using <code>kd * (lightIntensity / (r * r)) * max(0, dot(n, l))</code> and specular lighting is calculated by 
+using <code>ks * (lightIntensity / (r * r)) * pow(max(0, dot(n, h)), power)</code> The Phong shading value is used as a scalar for the 
 sfinal color (i.e. finalColor *= phongValue). An example of phong shading in action is seen below. 
 </p>
 
@@ -185,7 +185,7 @@ Ambient Occlusion
 <p>
 We scaled the final color by the value we get from the Ambient Occlusion calculation, similar to the Phong shading. 
 When calculating the Ambient Occlusion, we iterate over some constant number of steps (5 in our case) along a ray normal to 
-the intersection point. For each step, we compute `pow(numSteps * stepDist - sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps`. 
+    the intersection point. For each step, we compute <code>pow(numSteps * stepDist - sceneSDF(intersection + normal * numSteps * stepDist), 2) / numSteps</code>. 
 At the end we raise the occlusion factor to the power we passed into the function. Intuitively, this formula is computing 
 the sceneSDF and checking if rays in the normal direction are occluded by other primitives. We then subtract this amount from 
 the occlusion factor, which starts at 1.0.
@@ -227,10 +227,10 @@ Animation
 </h4>
 
 <p>
-We have access to the `_Time` variable in Unity, which represents the time passed since the scene started. On every iteration 
+We have access to the <code>_Time</code> variable in Unity, which represents the time passed since the scene started. On every iteration 
 in the SDF, we found the time we wanted to use for the animation by taking  the sine function of time to have a value for time 
 that oscillates smoothly. We then decided on a power of the animation that we were going to apply to the rotations of the 
-vertices. We did this by assigning power to `10 + 8 * sinTime`. We then continued to use this power value we found and applied 
+vertices. We did this by assigning power to <code>10 + 8 * sinTime</code>. We then continued to use this power value we found and applied 
 it to the vertices when converting to polar coordinates, and when scaling and rotating the coordinates. We then used the angles 
 found for polar coordinates using the power to convert back to Cartesian coordinates. 
 </p>
@@ -247,7 +247,7 @@ found for polar coordinates using the power to convert back to Cartesian coordin
         <tr>
             <td align="middle">
             <img src="images/bug-1.png" width="600px" />
-            <figcaption align="middle">First bug</figcaption>
+            <figcaption align="middle">The first primitive we successfully rendered</figcaption>
         </tr>
     </table>
   </div>
@@ -266,7 +266,7 @@ render.
         <tr>
             <td align="middle">
             <img src="images/bug-2.png" width="600px" />
-            <figcaption align="middle">Second bug</figcaption>
+            <figcaption align="middle">Broken Menger sponge</figcaption>
         </tr>
     </table>
   </div>
@@ -274,9 +274,9 @@ render.
   <p>
     This is how the Menger sponge SDF looked upon first implementation. Only half of the Menger sponge was correctly rendering. 
     After looking online for solutions, we discovered an article that pointed out how the modulo function in HLSL functions 
-    differently from the modulo function in some other shader languages. We replaced `x % y` in our definition with 
-    `x - y * floor(x / y)`, which fixed it. This differs from the default HLSL implementation of mod, `x - y * trunc(x / y)`, 
-    when the `x / y` term is negative.
+      differently from the modulo function in some other shader languages. We replaced <code>x % y</code> in our definition with 
+      <code>x - y * floor(x / y)</code> which fixed it. This differs from the default HLSL implementation of mod, <code>x - y * trunc(x / y)</code>, 
+    when the <code>x / y</code> term is negative.
   </p>
 
   <div align="center">
@@ -284,7 +284,7 @@ render.
         <tr>
             <td align="middle">
             <img src="images/bug-3.png" width="600px" />
-            <figcaption align="middle">Third bug</figcaption>
+            <figcaption align="middle">Menger sponge with aliasing</figcaption>
         </tr>
     </table>
   </div>
@@ -308,7 +308,7 @@ render.
   </div>
 
   <h2>
-    A description of lessons learned
+    Lessons Learned
   </h2>
 
   <p>
@@ -322,11 +322,6 @@ render.
   <h2>
     Results
   </h2>
-
-  <p>
-    Your final images, animations, video of your system (whichever is relevant). You can include results that you think show 
-    off what you built but that you did not have time to go over on presentation day.
-  </p>
 
   <p>
     Run our demo on your computer! (Windows & macOS)
